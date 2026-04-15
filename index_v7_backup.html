@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tag Viewer</title>
+<style>
+:root {
+  --bg:#0d1117; --bg2:#161b22; --bg3:#1c2128; --bg4:#21262d;
+  --border:#30363d; --text:#c9d1d9; --dim:#484f58; --dim2:#8b949e;
+  --blue:#1f6feb; --blue-bg:rgba(31,111,235,.15);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;font-size:13px}
+
+/* Sidebar */
+.side{width:260px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.side-head{padding:10px;border-bottom:1px solid var(--border)}
+.side-head input{width:100%;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;outline:none}
+.side-head input:focus{border-color:var(--blue)}
+.side-body{flex:1;overflow-y:auto;padding:4px 6px}
+.grp{margin-bottom:1px}
+.grp-h{display:flex;align-items:center;padding:4px 6px;cursor:pointer;border-radius:4px;color:var(--dim2);font-weight:600;font-size:11px;user-select:none;gap:3px}
+.grp-h:hover{background:var(--bg3)}
+.grp-h .a{width:10px;font-size:8px;transition:transform .12s}
+.grp-h.on .a{transform:rotate(90deg)}
+.grp-h .c{margin-left:auto;font-size:10px;color:var(--dim)}
+.grp-b{display:none;padding-left:6px}
+.grp-b.on{display:block}
+.ti{display:flex;align-items:center;padding:2px 6px;cursor:pointer;border-radius:3px;gap:4px}
+.ti:hover{background:var(--bg3)}
+.ti.act{background:var(--blue-bg)}
+.bg{padding:1px 6px;border-radius:8px;font-size:10px;color:#fff;white-space:nowrap}
+.ti .n{margin-left:auto;font-size:10px;color:var(--dim)}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.bar{display:flex;align-items:center;padding:6px 12px;gap:6px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap}
+.tab{padding:4px 10px;border-radius:4px;cursor:pointer;color:var(--dim2);font-size:12px;border:1px solid transparent}
+.tab.on{color:var(--text);background:var(--bg3);border-color:var(--border)}
+.tab:hover{color:var(--text)}
+.btn{padding:3px 8px;border-radius:4px;cursor:pointer;color:var(--dim2);font-size:11px;background:none;border:1px solid var(--border)}
+.btn:hover{color:var(--text);background:var(--bg3)}
+.mode-btn{color:var(--blue);border-color:var(--blue);font-size:11px}
+.mode-btn.or{color:#f0883e;border-color:#f0883e}
+.sep{width:1px;height:16px;background:var(--border)}
+.flt{display:flex;gap:3px;flex-wrap:wrap;flex:1}
+.ft{display:inline-flex;align-items:center;gap:3px;padding:1px 6px;border-radius:8px;font-size:10px;color:#fff;cursor:pointer}
+.ft:hover{opacity:.8}
+.sts{font-size:11px;color:var(--dim);white-space:nowrap}
+
+/* Overview */
+.ov{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.ov-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px}
+.ov-card h4{font-size:12px;color:var(--dim2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ov-card h4 .dot{width:8px;height:8px;border-radius:50%}
+.ov-bar{display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:11px;cursor:pointer;padding:2px 4px;border-radius:3px}
+.ov-bar:hover{background:var(--bg3)}
+.ov-bar .lb{width:70px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dim2)}
+.ov-bar .br{flex:1;height:14px;background:var(--bg);border-radius:3px;position:relative}
+.ov-bar .br-f{position:absolute;left:0;top:0;height:100%;border-radius:3px;transition:width .3s ease}
+.ov-bar .vl{width:24px;text-align:right;font-size:10px;color:var(--dim)}
+
+.content{flex:1;overflow-y:auto;padding:12px 14px}
+
+/* Folder Tree */
+.fn{margin-left:14px}
+.fn.r{margin-left:0}
+.fr{display:flex;align-items:center;padding:2px 6px;border-radius:4px;cursor:pointer;gap:4px;min-height:22px}
+.fr:hover{background:var(--bg3)}
+.fr .ic{color:var(--dim2);font-size:9px;width:10px;flex-shrink:0;transition:transform .12s}
+.fr.exp .ic{transform:rotate(90deg)}
+.fr .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fr .tgs{display:flex;gap:2px;flex-wrap:wrap;margin-left:auto;flex-shrink:0}
+.fr .mt{padding:0 4px;border-radius:6px;font-size:9px;color:#fff;cursor:pointer;opacity:.75}
+.fr .mt:hover{opacity:1;outline:1px solid #fff3}
+.fc{display:none}
+.fc.on{display:block}
+.fr.hi{background:var(--blue-bg)}
+.fr.lo{opacity:.2}
+.guide{border-left:1px solid var(--border);margin-left:5px;padding-left:9px}
+
+/* Tag Tree */
+.tt-g{margin-bottom:14px}
+.tt-g h3{padding:5px 8px;font-size:12px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.tt-r{margin-left:6px}
+.tt-h{display:flex;align-items:center;gap:5px;padding:3px 6px;cursor:pointer;border-radius:4px;font-size:12px}
+.tt-h:hover{background:var(--bg3)}
+.tt-h .a{font-size:8px;width:10px;transition:transform .12s}
+.tt-h.on .a{transform:rotate(90deg)}
+.tt-f{display:none;padding-left:18px}
+.tt-f.on{display:block}
+.tt-fl{padding:2px 6px;font-size:11px;color:#58a6ff;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tt-fl:hover{background:var(--bg3)}
+
+/* Flat List */
+.lst{display:flex;flex-direction:column;gap:1px}
+.ls-row{display:flex;align-items:flex-start;padding:5px 10px;border-radius:4px;gap:10px;flex-wrap:wrap}
+.ls-row:hover{background:var(--bg3)}
+.ls-path{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ls-parent{color:var(--dim);font-size:11px}
+.ls-name{color:var(--text);font-size:12px}
+.ls-tags{display:flex;gap:3px;flex-wrap:wrap;flex-shrink:0}
+.ls-file{opacity:.85}
+.ls-file .ls-name{color:var(--dim2)}
+.ls-ico{width:16px;display:inline-block;text-align:center;font-size:11px;flex-shrink:0}
+.ls-meta{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.ls-sz{font-size:10px;color:var(--dim);min-width:45px;text-align:right}
+
+
+/* Tree file rows */
+.tf-row{display:flex;align-items:center;padding:1px 6px 1px 24px;gap:4px;font-size:11px;color:var(--dim2);border-radius:3px}
+.tf-row:hover{background:var(--bg3)}
+.tf-ico{width:14px;text-align:center;flex-shrink:0}
+.tf-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tf-sz{margin-left:auto;font-size:10px;color:var(--dim);flex-shrink:0}
+
+/* List expandable folder */
+.ls-folder-row{cursor:pointer}
+.ls-folder-row:hover{background:var(--bg3)}
+.ls-expand-ico{font-size:8px;width:12px;display:inline-block;transition:transform .12s;color:var(--dim2)}
+.ls-folder-row.exp .ls-expand-ico{transform:rotate(90deg)}
+.ls-children{display:none;margin-left:24px}
+.ls-children.on{display:block}
+.ls-child-row{display:flex;align-items:center;padding:2px 10px;gap:8px;font-size:11px;color:var(--dim2);border-radius:3px}
+.ls-child-row:hover{background:var(--bg3)}
+
+/* Overview count emphasis */
+.ov-bar .vl{width:36px;text-align:right;font-size:11px;color:var(--text);font-weight:600}
+
+.empty{padding:30px;text-align:center;color:var(--dim)}
+
+/* Breadcrumb */
+.breadcrumb{padding:6px 14px;font-size:11px;color:var(--dim2);border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+.breadcrumb .bc-seg{cursor:pointer;padding:1px 4px;border-radius:3px}
+.breadcrumb .bc-seg:hover{background:var(--bg3);color:var(--text)}
+.breadcrumb .bc-sep{color:var(--dim);font-size:9px}
+.breadcrumb .bc-cur{color:var(--text);font-weight:600}
+
+/* Options panel */
+.opt-btn{padding:3px 8px;border-radius:4px;cursor:pointer;color:var(--dim2);font-size:14px;background:none;border:1px solid var(--border);position:relative;line-height:1}
+.opt-btn:hover{color:var(--text);background:var(--bg3)}
+.opt-panel{display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;min-width:240px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.opt-panel.on{display:block}
+.opt-panel h4{font-size:11px;color:var(--dim2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.opt-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid var(--border)}
+.opt-row:last-child{border-bottom:none}
+.opt-row label{color:var(--text);cursor:pointer}
+.opt-toggle{position:relative;width:32px;height:18px;cursor:pointer}
+.opt-toggle input{opacity:0;width:0;height:0}
+.opt-toggle .slider{position:absolute;inset:0;background:var(--bg4);border-radius:9px;transition:.2s}
+.opt-toggle .slider:before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--dim2);border-radius:50%;transition:.2s}
+.opt-toggle input:checked+.slider{background:var(--blue)}
+.opt-toggle input:checked+.slider:before{transform:translateX(14px);background:#fff}
+.opt-select{background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:11px;padding:2px 6px;border-radius:4px;outline:none}
+.opt-select:focus{border-color:var(--blue)}
+
+/* Folder descriptions */
+.fdesc{font-size:10px;color:var(--dim);margin-left:4px;font-style:italic;opacity:.7}
+.fr .fdesc{font-size:9px}
+
+/* Quick stats dots */
+.qs-bar{display:flex;gap:1px;margin-left:6px;flex-shrink:0;align-items:center}
+.qs-seg{height:6px;border-radius:1px;min-width:2px}
+
+/* Notion links */
+.notion-link{display:block;padding:4px 6px;color:var(--text);text-decoration:none;font-size:12px;border-radius:4px}
+.notion-link:hover{background:var(--bg3)}
+
+/* Smart search suggest */
+.suggest{position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:240px;overflow-y:auto;z-index:50;display:none}
+.suggest.on{display:block}
+.suggest-item{padding:6px 10px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px}
+.suggest-item:hover{background:var(--bg3)}
+.suggest-item .s-tag{padding:1px 6px;border-radius:6px;font-size:10px;color:#fff}
+.suggest-item .s-count{margin-left:auto;color:var(--dim);font-size:10px}
+.suggest-label{padding:4px 10px;font-size:10px;color:var(--dim);border-bottom:1px solid var(--border)}
+
+/* Device tags - border + distinct colors */
+.bg[data-t^="PC-"]{border:2px solid #fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.bg[data-t^="phone-"]{border:2px solid #fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.bg[data-t^="cloud-"]{border:2px solid #fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.bg[data-t^="nas-"]{border:2px solid #fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.mt[data-t^="PC-"],.mt[data-t^="phone-"],.mt[data-t^="cloud-"],.mt[data-t^="nas-"]{border:2px solid #fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+
+/* Mobile */
+@media(max-width:768px){
+  html,body{overflow-x:hidden;width:100%;max-width:100vw}
+  body{flex-direction:column}
+  .side{position:fixed;left:-100%;top:0;bottom:0;width:72vw;max-width:280px;z-index:200;transition:left .25s ease;box-shadow:4px 0 20px rgba(0,0,0,.5)}
+  .side.open{left:0}
+  .mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199}
+  .mob-overlay.on{display:block}
+  .mob-bar{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--bg2);border-bottom:1px solid var(--border)}
+  .mob-btn{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:16px;padding:4px 10px;cursor:pointer;flex-shrink:0}
+  .main{width:100%;max-width:100vw;height:100vh}
+  ::-webkit-scrollbar{width:0;height:0}
+  .bar{display:flex;gap:2px;padding:4px 8px;flex-wrap:wrap}
+  .bar .sep,.bar #modeBtn,.bar .sts,.bar .opt-btn,.bar .opt-panel{display:none!important}
+  .tab{padding:6px 10px;font-size:12px;white-space:nowrap;flex-shrink:0}
+  .btn{padding:4px 8px;font-size:11px;white-space:nowrap;flex-shrink:0}
+  .flt{flex-wrap:nowrap;overflow-x:auto}
+  .content{padding:6px}
+  .ls-row{flex-direction:column;align-items:flex-start!important;gap:4px;padding:8px 6px}
+  .ls-path{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ls-tags{max-height:60px;overflow-y:auto}
+  .ls-tags{flex-wrap:wrap}
+  .bg{padding:3px 8px;font-size:11px}
+  .fr{min-height:32px;padding:4px 8px}
+  .fr .mt{padding:2px 6px;font-size:10px}
+  .ov{grid-template-columns:1fr!important}
+  .ov-card{padding:10px}
+  .ov-bar{padding:8px 6px;min-height:36px;cursor:pointer}
+  .ov-bar .lb{width:70px;font-size:13px}
+  .ov-bar .vl{font-size:13px}
+  .opt-panel{position:fixed!important;top:50px;right:10px;left:auto;min-width:240px;z-index:300}
+  .kb-hint{display:none}
+  .breadcrumb{font-size:12px;padding:4px 8px}
+  .thumb-img{width:40px;height:40px}
+}
+@media(min-width:769px){
+  .mob-bar{display:none}
+  .mob-overlay{display:none!important}
+}
+
+/* Thumbnails */
+.thumb-img{width:48px;height:48px;object-fit:cover;border-radius:4px;border:1px solid var(--border);flex-shrink:0;background:var(--bg);cursor:pointer;transition:transform .15s}
+.thumb-img:hover{transform:scale(2.5);z-index:10;position:relative;box-shadow:0 4px 16px rgba(0,0,0,.6)}
+.thumb-img.lg{width:64px;height:64px}
+.thumb-placeholder{width:48px;height:48px;border-radius:4px;background:var(--bg3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--dim)}
+
+/* Light theme */
+body.light{--bg:#f6f8fa;--bg2:#ffffff;--bg3:#f0f2f5;--bg4:#e1e4e8;--border:#d0d7de;--text:#1f2328;--dim:#656d76;--dim2:#59636e;--blue:#0969da;--blue-bg:rgba(9,105,218,.1)}
+body.light ::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* Keyboard hint */
+.kb-hint{position:fixed;bottom:12px;right:12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:10px;color:var(--dim);z-index:50;opacity:.6}
+.kb-hint:hover{opacity:1}
+.kb-hint kbd{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:0 4px;font-size:10px;font-family:inherit}
+
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+</style>
+</head>
+<body>
+
+<div class="mob-overlay" id="mobOverlay" onclick="closeSide()"></div>
+<div class="side" id="sidePanel">
+  <div class="side-head" style="position:relative"><input id="q" placeholder="日本語でもOK... 例: 原画 呪術3期"><div class="suggest" id="suggest"></div></div>
+  <div id="mobFilters" style="display:none;padding:6px 8px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:4px"></div>
+  <div class="side-body" id="sb"></div>
+</div>
+<div class="main">
+  <div class="mob-bar"><button class="mob-btn" onclick="openSide()">☰</button><input id="qMob" placeholder="検索..." style="flex:1;min-width:0;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;outline:none"><span style="font-size:10px;color:var(--dim);white-space:nowrap;flex-shrink:0" id="mobSt"></span><button class="mob-btn" onclick="tglOpt(event)" style="font-size:14px;flex-shrink:0">⚙</button></div>
+  <div class="bar">
+    <div class="tab on" data-v="o" id="to">概要</div>
+    <div class="tab" data-v="l" id="tl">一覧</div>
+    <div class="tab" data-v="f" id="tf">ツリー</div>
+    <div class="tab" data-v="t" id="tg">タグ</div>
+    <div class="sep"></div>
+    <button class="btn" onclick="expandAll()">全開</button>
+    <button class="btn" onclick="collapseAll()">全閉</button>
+    <button class="btn" onclick="clearFilters()">リセット</button>
+    <div class="sep"></div>
+    <button class="btn mode-btn" id="modeBtn" onclick="toggleMode()" title="AND/OR切替" style="display:none;font-weight:700;min-width:36px">AND</button>
+    <div class="flt" id="flt"></div>
+    <div class="sts" id="st"></div>
+    <div class="sep"></div>
+    <div style="position:relative"><button class="opt-btn" onclick="tglOpt(event)" title="設定">⚙</button>
+    <div class="opt-panel" id="optPanel">
+      <h4>表示設定</h4>
+      <div class="opt-row"><label for="optDesc">フォルダ説明表示</label><label class="opt-toggle"><input type="checkbox" id="optDesc" onchange="setSetting('showDesc',this.checked)"><span class="slider"></span></label></div>
+      <div class="opt-row"><label for="optSize">ファイルサイズ表示</label><label class="opt-toggle"><input type="checkbox" id="optSize" onchange="setSetting('showSize',this.checked)" checked><span class="slider"></span></label></div>
+      <div class="opt-row"><label for="optThumb">サムネイル表示</label><label class="opt-toggle"><input type="checkbox" id="optThumb" onchange="setSetting('showThumbs',this.checked)"><span class="slider"></span></label></div>
+      <div class="opt-row"><label for="optEmpty">空フォルダ非表示</label><label class="opt-toggle"><input type="checkbox" id="optEmpty" onchange="setSetting('hideEmpty',this.checked)"><span class="slider"></span></label></div>
+      <div class="opt-row"><label for="optInherit">タグ継承表示</label><label class="opt-toggle"><input type="checkbox" id="optInherit" onchange="setSetting('showInherited',this.checked)"><span class="slider"></span></label></div>
+      <div class="opt-row"><label for="optLimit">表示件数</label><select class="opt-select" id="optLimit" onchange="setSetting('listLimit',+this.value)"><option value="500">500</option><option value="1000">1000</option><option value="2000" selected>2000</option><option value="5000">5000</option></select></div>
+      <div class="opt-row"><label for="optTheme">テーマ</label><select class="opt-select" id="optTheme" onchange="setSetting('theme',this.value)"><option value="dark">ダーク</option><option value="light">ライト</option></select></div>
+    </div></div>
+  </div>
+  <div id="breadcrumb" class="breadcrumb" style="display:none"></div>
+  <div class="content" id="ct"></div>
+  <div class="kb-hint"><kbd>Esc</kbd> リセット &nbsp; <kbd>/</kbd> 検索</div>
+</div>
+
+<div id="loading" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:999;flex-direction:column;gap:12px"><div style="color:var(--text);font-size:16px">読み込み中...</div><div style="color:var(--dim);font-size:12px" id="loadPct">0%</div></div>
+<script>
+let DATA;
+let TAG_MAP={synonyms:{},categories:{}};
+let NOTION_PAGES=[];
+async function init(){
+  // Load data.json step by step for debug
+  const lp=document.getElementById('loadPct');
+  try{
+    lp.textContent='1/5 data.json取得中...';
+    const res=await fetch('data.json');
+    lp.textContent='2/5 status:'+res.status+' 解析中...';
+    const text=await res.text();
+    lp.textContent='3/5 JSON解析中('+Math.round(text.length/1024/1024)+'MB)...';
+    DATA=JSON.parse(text);
+    lp.textContent='4/5 タグ構築中('+DATA.folders.length+'folders)...';
+    if(!DATA.tagIndex){
+      DATA.tagIndex={};
+      DATA.folders.forEach(f=>f.tags.forEach(t=>{if(!DATA.tagIndex[t])DATA.tagIndex[t]=[];DATA.tagIndex[t].push(f.path)}));
+    }
+    lp.textContent='5/5 追加データ読込中...';
+    try{
+      const extraRes=await fetch('data-extra.json');
+      if(extraRes.ok){const extra=JSON.parse(await extraRes.text());DATA.folderStats=extra.folderStats||{};DATA.thumbMap=extra.thumbMap||{};}
+    }catch{}
+    try{const mapRes=await fetch('tag_mapping.json');if(mapRes.ok)TAG_MAP=await mapRes.json();}catch{}
+    try{const nr=await fetch('notion_cache.json');if(nr.ok)NOTION_PAGES=await nr.json();}catch{}
+  }catch(e){
+    lp.textContent='エラー(step): '+e.message;
+    console.error('init error:',e);
+    return;
+  }
+  // Merge Notion pages into folders with 'notion' tag + their Notion tags
+  if(NOTION_PAGES.length){
+    NOTION_PAGES.forEach(p=>{
+      if(!p.name)return;
+      // Convert Notion tag names to simple tags: ".Work .JTK" -> ["work","jtk"]
+      const ntags=['notion'];
+      (p.tags||[]).forEach(t=>{
+        t.split(/s+/).filter(s=>s.startsWith('.')).forEach(s=>{
+          ntags.push(s.replace('.','').toLowerCase());
+        });
+      });
+      const path='notion://'+p.name;
+      DATA.folders.push({path:path,tags:ntags,depth:0,_notionUrl:p.url});
+      ntags.forEach(t=>{if(!DATA.tagIndex[t])DATA.tagIndex[t]=[];DATA.tagIndex[t].push(path)});
+    });
+  }
+  // Reorganize groups: source (top) + device (separate)
+  const srcGroup={title:'source',color:'#00acc1',children:[
+    {title:'nas-direct',type:'sidecar',color:'#00838f'},
+    {title:'notion',type:'sidecar',color:'#f57c00'},
+    {title:'obsidian',type:'sidecar',color:'#7c4dff'}
+  ]};
+  // Remove notion/obsidian from device group if present
+  const devGroup=DATA.groups.find(g=>g.title==='device');
+  if(devGroup)devGroup.children=devGroup.children.filter(c=>!['notion','obsidian','nas-direct'].includes(c.title));
+  // Add source group at top
+  DATA.groups=DATA.groups.filter(g=>g.title!=='source');
+  DATA.groups.unshift(srcGroup);
+  document.getElementById('loading').remove();
+  startApp();
+}
+init();
+function startApp(){
+
+const colors = {};
+DATA.groups.forEach(g => g.children.forEach(t => { colors[t.title] = g.color; }));
+
+let filters = new Set();
+let filterMode = 'and'; // 'and' or 'or'
+let view = 'o';
+
+// ── Folder Description Mapping ──
+const FOLDER_DESC = {
+  // Top-level Dewey categories
+  '0000_Inbox':'未整理',
+  '1000_Family':'家族・プライベート',
+  '2000_Creative':'個人創作・学習',
+  '3000_Work':'仕事（MAPPA）',
+  '4000_Finance':'金融・行政',
+  '9000_Backup':'バックアップ',
+  // 1xxx
+  '1100_Photos':'家族写真',
+  '1200_Travel':'旅行記録',
+  '1300_Health':'健康・医療',
+  // 2xxx Creative subfolders
+  '2100_Writing':'執筆・文章',
+  '2200_Music':'音楽制作・DTM',
+  '2300_Programming':'プログラミング',
+  '2400_Art':'個人アート',
+  '2500_GameDev':'ゲーム開発',
+  '2600_WebDev':'ウェブ開発',
+  '2700_Learning':'学習・講座',
+  '2800_3DCG':'3DCG・モデリング',
+  // 3xxx Work subfolders
+  '3100_References':'作画・演出資料',
+  '3200_Production':'制作物',
+  '3300_Tools':'ツール・設定',
+  '311_Drawing_Animation':'原画マン時代',
+  '312_Director_Animation':'演出/監督時代',
+  '318_NotDoneWork':'未完了/検討作品',
+  // 311 原画マン時代 - 作品別
+  '001_SKF':'スケットダンス',
+  '002_KSC':'坂道のアポロン',
+  '003_ERO':'残響のテロル',
+  '004_Fate':'Fate/Grand Order',
+  '005_NTZ':'この世界の片隅に',
+  '006_BC':'牙狼 VANISHING LINE',
+  '007_SAO':'ソードアート・オンライン',
+  '008_ERO_ova':'残響のテロル OVA',
+  '009_MOB2':'モブサイコ100 II',
+  '010_TYN':'体操ザムライ',
+  '011_FGO':'Fate/Grand Order 劇場版',
+  '012_GOH':'ゴッド・オブ・ハイスクール',
+  '013_JTK':'呪術廻戦 1期',
+  // 312 演出/監督時代 - 作品別
+  '001_JTK':'呪術廻戦 1期 (演出)',
+  '002_RKK':'ランキング・オブ・キングス',
+  '003_CSM':'チェンソーマン',
+  '004_JTK2':'呪術廻戦 2期',
+  // 32xx Production
+  '3210_JTK2':'呪術廻戦 2期',
+  '3220_JTK3':'呪術廻戦 3期',
+  '3230_JTK_movie2':'呪術廻戦 劇場版2',
+  // 4xxx Finance
+  '4100_Tax':'税金・確定申告',
+  '4200_Insurance':'保険',
+  '4300_Banking':'銀行・投資',
+  '4400_Legal':'法律・契約',
+  '4500_Admin':'行政手続き',
+  // Special
+  '_archive':'完了プロジェクト',
+  'PastProjects':'過去作品アーカイブ'
+};
+
+function getFolderDesc(name){return FOLDER_DESC[name]||''}
+function descSpan(name){
+  if(!settings.showDesc)return '';
+  const d=getFolderDesc(name);
+  return d?'<span class="fdesc">'+esc(d)+'</span>':'';
+}
+
+// ── Settings (persisted to localStorage) ──
+const DEFAULT_SETTINGS={showDesc:true,showSize:true,showThumbs:false,hideEmpty:false,showInherited:false,listLimit:2000,theme:'dark'};
+let settings={...DEFAULT_SETTINGS};
+function loadSettings(){
+  try{const s=localStorage.getItem('tagviewer_settings');if(s)settings={...DEFAULT_SETTINGS,...JSON.parse(s)}}catch(e){}
+  applySettings();
+}
+function saveSettings(){try{localStorage.setItem('tagviewer_settings',JSON.stringify(settings))}catch(e){}}
+function applySettings(){
+  document.getElementById('optDesc').checked=settings.showDesc;
+  document.getElementById('optSize').checked=settings.showSize;
+  document.getElementById('optThumb').checked=settings.showThumbs;
+  document.getElementById('optEmpty').checked=settings.hideEmpty;
+  document.getElementById('optInherit').checked=settings.showInherited;
+  document.getElementById('optLimit').value=settings.listLimit;
+  document.getElementById('optTheme').value=settings.theme;
+  document.body.classList.toggle('light',settings.theme==='light');
+}
+window.setSetting=function(k,v){settings[k]=v;saveSettings();applySettings();update()};
+window.tglOpt=function(e){e.stopPropagation();document.getElementById('optPanel').classList.toggle('on')};
+document.addEventListener('click',function(e){if(!e.target.closest('.opt-panel')&&!e.target.closest('.opt-btn'))document.getElementById('optPanel').classList.remove('on')});
+
+// ── Breadcrumb state ──
+let breadcrumbPath = '';
+function renderBreadcrumb(){
+  const bc=document.getElementById('breadcrumb');
+  if(!filters.size&&!breadcrumbPath){bc.style.display='none';return}
+  bc.style.display='flex';
+  let h='<span style="color:var(--dim);margin-right:2px">📂</span>';
+  if(filters.size){
+    h+='<span class="bc-seg bc-cur">フィルタ: '+[...filters].map(t=>'<span style="background:'+col(t)+';padding:2px 8px;border-radius:6px;font-size:11px;color:#fff;cursor:pointer" data-t="'+esc(t)+'" onclick="tglF(this.dataset.t)">'+esc(t)+' ×</span>').join(' ')+'</span>';
+    h+=' <span class="bc-sep">/</span> <span style="color:var(--dim)">'+filtered().length+' 一致</span>';
+  } else if(breadcrumbPath){
+    const parts=breadcrumbPath.split('/').filter(Boolean);
+    parts.forEach((p,i)=>{
+      if(i>0)h+='<span class="bc-sep">›</span>';
+      h+='<span class="bc-seg">'+esc(p)+'</span>';
+    });
+  }
+  bc.innerHTML=h;
+  // Mobile: show active filters in sidebar header
+  const mf=document.getElementById('mobFilters');
+  if(mf){
+    if(!filters.size){mf.style.display='none';return}
+    mf.style.display='flex';
+    mf.innerHTML=[...filters].map(t=>'<span style="background:'+col(t)+';padding:3px 10px;border-radius:8px;font-size:12px;color:#fff;cursor:pointer" data-t="'+esc(t)+'" onclick="tglF(this.dataset.t)">'+esc(t)+' ×</span>').join('')+'<span style="color:var(--blue);font-size:11px;cursor:pointer;padding:3px 6px" onclick="setTimeout(clearFilters,0)">全解除</span>';
+  }
+}
+
+// ── Tag inheritance (collect parent tags) ──
+function getInheritedTags(folderPath){
+  if(!settings.showInherited)return[];
+  const parts=folderPath.split('/').filter(Boolean);
+  const inherited=new Set();
+  for(let i=1;i<parts.length;i++){
+    const parentPath='/'+parts.slice(0,i).join('/');
+    const pf=DATA.folders.find(f=>f.path===parentPath);
+    if(pf)pf.tags.forEach(t=>inherited.add(t));
+  }
+  // Get this folder's own tags to exclude
+  const own=DATA.folders.find(f=>f.path===folderPath);
+  if(own)own.tags.forEach(t=>inherited.delete(t));
+  return[...inherited];
+}
+
+// ── Quick Stats (file type breakdown) ──
+const FILE_CATEGORIES={
+  image:['.jpg','.jpeg','.png','.gif','.webp','.svg','.bmp','.tiff','.tif','.exr','.hdr','.psd','.ai','.clip','.sai'],
+  video:['.mp4','.mov','.avi','.mkv','.webm','.flv','.wmv','.prproj','.aep'],
+  audio:['.mp3','.wav','.flac','.ogg','.aac','.m4a'],
+  doc:['.pdf','.doc','.docx','.txt','.rtf','.odt','.csv','.xlsx','.xls','.pptx','.ppt','.json','.html','.htm','.md'],
+  model3d:['.blend','.fbx','.obj','.gltf','.glb','.stl','.3ds','.c4d','.ma','.mb']
+};
+const CAT_COLORS={image:'#e06c75',video:'#61afef',audio:'#c678dd',doc:'#98c379',model3d:'#e5c07b'};
+function fileCat(ext){
+  for(const[cat,exts]of Object.entries(FILE_CATEGORIES)){if(exts.includes(ext))return cat}
+  return 'other';
+}
+function quickStatsBar(folderPath){
+  const stats=DATA.folderStats?DATA.folderStats[folderPath]:null;
+  if(!stats||!stats.count)return '';
+  const counts={image:0,video:0,audio:0,doc:0,model3d:0,other:0};
+  if(stats.exts){Object.entries(stats.exts).forEach(([ext,c])=>{counts[fileCat(ext)]+=c;});}
+  const total=stats.count;
+  let h='<span class="qs-bar" title="画像:'+counts.image+' 動画:'+counts.video+' 音声:'+counts.audio+' 文書:'+counts.doc+' 3D:'+counts.model3d+' 他:'+counts.other+'">';
+  for(const[cat,c]of Object.entries(counts)){
+    if(c===0)continue;
+    const w=Math.max(2,Math.round(c/total*40));
+    h+='<span class="qs-seg" style="width:'+w+'px;background:'+(CAT_COLORS[cat]||'var(--dim)')+'"></span>';
+  }
+  h+='</span>';
+  return h;
+}
+
+// Thumbnail helper
+const THUMB_MAP=DATA.thumbMap||{};
+function thumbHtml(folderPath){
+  if(!settings.showThumbs)return '';
+  const t=THUMB_MAP[folderPath];
+  if(!t)return '';
+  return '<img class="thumb-img" data-src="thumbs/'+encodeURIComponent(t)+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">';
+}
+// Lazy load observer
+let _thumbObserver=null;
+function initThumbObserver(){
+  if(_thumbObserver)_thumbObserver.disconnect();
+  if(!settings.showThumbs)return;
+  _thumbObserver=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const img=e.target;
+        if(img.dataset.src){img.src=img.dataset.src;delete img.dataset.src;_thumbObserver.unobserve(img)}
+      }
+    });
+  },{rootMargin:'200px'});
+  document.querySelectorAll('.thumb-img[data-src]').forEach(img=>_thumbObserver.observe(img));
+}
+
+// Smart search: Japanese → tag resolution
+function smartSearch(query){
+  if(!query)return[];
+  const q=query.toLowerCase();
+  const matched=new Set();
+  // Direct tag match
+  Object.keys(DATA.tagIndex||{}).forEach(t=>{if(t.toLowerCase().includes(q))matched.add(t)});
+  // Synonym match
+  Object.entries(TAG_MAP.synonyms||{}).forEach(([key,vals])=>{
+    if(key.toLowerCase().includes(q)||key.toLowerCase()===q){
+      vals.forEach(v=>{if(DATA.tagIndex&&DATA.tagIndex[v])matched.add(v)});
+    }
+    vals.forEach(v=>{if(v.toLowerCase().includes(q)&&DATA.tagIndex&&DATA.tagIndex[v])matched.add(v)});
+  });
+  return[...matched];
+}
+
+// Unified search: tags + folder names + synonyms
+let _searchResults=null;
+function unifiedSearch(query){
+  if(!query||query.length<1){_searchResults=null;return}
+  const words=query.toLowerCase().split(/s+/).filter(Boolean);
+  if(!words.length){_searchResults=null;return}
+
+  // For each word, find matching tags via smart search
+  const wordTags=words.map(w=>smartSearch(w));
+
+  // Score each folder
+  const scores=new Map();
+  DATA.folders.forEach(f=>{
+    let score=0;
+    const pathLower=f.path.toLowerCase();
+    const tagsLower=f.tags.map(t=>t.toLowerCase());
+
+    words.forEach((w,i)=>{
+      // Folder name/path match
+      if(pathLower.includes(w))score+=10;
+      // Direct tag text match
+      if(tagsLower.some(t=>t.includes(w)))score+=5;
+      // Synonym-resolved tag match
+      if(wordTags[i].some(t=>f.tags.includes(t)))score+=8;
+    });
+
+    if(score>0)scores.set(f,score);
+  });
+
+  // Sort by score descending
+  _searchResults=[...scores.entries()].sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+
+}
+
+function col(t){return colors[t]||'#6e7681'}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
+
+// Sidebar
+function renderSB(q){
+  let h='';
+  DATA.groups.forEach(g=>{
+    const kids=g.children.filter(t=>!q||t.title.toLowerCase().includes(q));
+    if(q&&kids.length===0)return;
+    const op=q?' on':'';
+    h+='<div class="grp"><div class="grp-h'+op+'" onclick="tglG(this)"><span class="a">▶</span><span style="color:'+g.color+'">'+esc(g.title)+'</span><span class="c">'+kids.length+'</span></div><div class="grp-b'+op+'">';
+    kids.forEach(t=>{
+      const c=(DATA.tagIndex[t.title]||[]).length;
+      const a=filters.has(t.title)?' act':'';
+      h+='<div class="ti'+a+'" data-t="'+esc(t.title)+'" onclick="tglF(this.dataset.t)"><span class="bg" style="background:'+g.color+'">'+esc(t.title)+'</span><span class="n">'+c+'</span></div>';
+    });
+    h+='</div></div>';
+  });
+  document.getElementById('sb').innerHTML=h;
+}
+window.tglG=function(el){el.classList.toggle('on');el.nextElementSibling.classList.toggle('on')};
+
+// Filters
+window.tglF=function(tag){
+  filters.has(tag)?filters.delete(tag):filters.add(tag);
+  // タブ自動遷移なし — ユーザーが手動で切り替え
+  // Save sidebar open state
+  const openGroups=new Set();
+  document.querySelectorAll('.grp-h.on').forEach(el=>{const t=el.querySelector('span:nth-child(2)');if(t)openGroups.add(t.textContent)});
+  update();
+  // Restore sidebar open state
+  document.querySelectorAll('.grp-h').forEach(el=>{const t=el.querySelector('span:nth-child(2)');if(t&&openGroups.has(t.textContent)){el.classList.add('on');el.nextElementSibling.classList.add('on')}});
+};
+window.clearFilters=function(){filters.clear();filterMode='and';update()};
+window.toggleMode=function(){filterMode=filterMode==='and'?'or':'and';update()};
+
+// Build folder stats from folderStats or files array
+const _folderFileCount={};
+const _folderFiles={};
+if(DATA.folderStats){
+  Object.entries(DATA.folderStats).forEach(([folder,s])=>{_folderFileCount[folder]=s.count;});
+} else {
+  (DATA.files||[]).forEach(f=>{
+    const folder=f[0].substring(0,f[0].lastIndexOf('/'));
+    const name=f[0].substring(f[0].lastIndexOf('/')+1);
+    _folderFileCount[folder]=(_folderFileCount[folder]||0)+1;
+    if(!_folderFiles[folder])_folderFiles[folder]=[];
+    _folderFiles[folder].push({name,ext:f[1],size:f[2]});
+  });
+}
+// Build folder tree structure once
+const _tree={};
+DATA.folders.forEach(f=>{
+  const ps=f.path.split('/').filter(Boolean);
+  let n=_tree;
+  ps.forEach((p,i)=>{
+    if(!n[p])n[p]={_c:{},_t:[],_p:'/'+ps.slice(0,i+1).join('/')};
+    if(i===ps.length-1)n[p]._t=f.tags;
+    n=n[p]._c;
+  });
+});
+
+function filtered(){
+  // If unified search has results, use those (already scored+sorted)
+  if(_searchResults)return _searchResults;
+  let result=DATA.folders;
+  if(filters.size){
+    if(filterMode==='and') result=result.filter(f=>[...filters].every(t=>f.tags.includes(t)));
+    else result=result.filter(f=>[...filters].some(t=>f.tags.includes(t)));
+  }
+  if(settings.hideEmpty) result=result.filter(f=>(_folderFileCount[f.path]||0)>0||DATA.folders.some(f2=>f2.path!==f.path&&f2.path.startsWith(f.path+'/')));
+  return result;
+}
+
+function update(){
+  const ct=document.getElementById('ct');
+  if(ct._vsHandler){ct.removeEventListener('scroll',ct._vsHandler);ct._vsHandler=null}
+  _vsExpandedIdx.clear();
+  const q=document.getElementById('q').value.toLowerCase();
+  // Unified search when typing (not just tag filter)
+  if(q&&q.length>=1&&!filters.size){
+    unifiedSearch(q);
+    // Auto switch to list view when searching
+    if(_searchResults&&_searchResults.length>0&&view!=='l'){
+      view='l';document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v==='l'));
+    }
+  } else {
+    _searchResults=null;
+  }
+  renderSB(q);renderFlt();renderBreadcrumb();renderView(q);
+  const fl=filtered().length;
+  document.getElementById('st').textContent=fl+' / '+DATA.folders.length+' フォルダ';
+  const ms=document.getElementById('mobSt');if(ms)ms.textContent=fl===DATA.folders.length?fl+'件':fl+'/'+DATA.folders.length;
+  setTimeout(initThumbObserver,50);
+}
+
+function renderFlt(){
+  const btn=document.getElementById('modeBtn');
+  btn.style.display=filters.size>=2?'':'none';
+  btn.textContent=filterMode.toUpperCase();
+  btn.className='btn mode-btn'+(filterMode==='or'?' or':'');
+  document.getElementById('flt').innerHTML=[...filters].map(t=>
+    '<span class="ft" style="background:'+col(t)+'" data-t="'+esc(t)+'" onclick="tglF(this.dataset.t)">'+esc(t)+' ×</span>'
+  ).join('');
+}
+
+// View tabs
+['to','tl','tf','tg'].forEach(id=>{
+  document.getElementById(id).onclick=()=>{
+    view=document.getElementById(id).dataset.v;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v===view));
+    update();
+  };
+});
+
+function renderView(q){
+  const el=document.getElementById('ct');
+  if(view==='o')renderOverview(el);
+  else if(view==='l')renderList(el,q);
+  else if(view==='f')renderFolder(el,q);
+  else renderTagTree(el,q);
+}
+
+// ── Flat List (Virtual Scroll) ──
+let _vsList=[];
+let _vsExpandedIdx=new Set();
+const ROW_H=settings.showThumbs?56:32;
+
+function getFilteredFiles(folderPath,q){
+  let files=_folderFiles[folderPath]||[];
+
+  if(q)files=files.filter(fi=>fi.name.toLowerCase().includes(q));
+  return files;
+}
+
+// Smart path: show last 2-3 segments, ellipsis for the rest
+function smartPath(fullPath){
+  const parts=fullPath.split('/').filter(Boolean);
+  if(parts.length<=3)return{parent:parts.slice(0,-1).join('/'),name:parts[parts.length-1]||''};
+  const name=parts[parts.length-1];
+  const ctx=parts[parts.length-2];
+  return{parent:'…/'+ctx,name:name};
+}
+
+function renderListRow(f,idx,q){
+  // Notion page
+  if(f.path.startsWith('notion://')){
+    const name=f.path.replace('notion://','');
+    const url=f._notionUrl||'';
+    let h='<div class="ls-row" style="border-left:3px solid #f57c00;padding-left:8px">';
+    if(url)h+='<a href="'+esc(url)+'" target="_blank" class="notion-link" style="flex:1" onclick="event.stopPropagation()">📝 '+esc(name)+'</a>';
+    else h+='<div class="ls-path">📝 '+esc(name)+'</div>';
+    h+='<div class="ls-tags"><span class="bg" style="background:#f57c00;font-size:10px;cursor:pointer" data-t="notion" onclick="event.stopPropagation();tglF(this.dataset.t)">notion</span></div></div>';
+    return h;
+  }
+  const sp=smartPath(f.path);
+  let tg=f.tags.map(t=>'<span class="bg" style="background:'+col(t)+';font-size:10px;cursor:pointer" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)">'+esc(t)+'</span>').join(' ');
+  if(settings.showInherited){
+    const inh=getInheritedTags(f.path);
+    if(inh.length)tg+=' '+inh.map(t=>'<span class="bg" style="background:'+col(t)+';font-size:10px;cursor:pointer;opacity:.35" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)" title="継承: '+esc(t)+'">'+esc(t)+'</span>').join(' ');
+  }
+  const files=getFilteredFiles(f.path,q);
+  const fc=files.length;
+  const desc=descSpan(sp.name);
+  const qs=quickStatsBar(f.path);
+  const th=thumbHtml(f.path);
+  const expanded=_vsExpandedIdx.has(idx);
+  let h='<div class="ls-row ls-folder-row'+(expanded?' exp':'')+'" data-idx="'+idx+'" onclick="tglLsFolder(this)" title="'+esc(f.path)+'" style="'+(th?'align-items:flex-start':'')+'">'+th+'<div class="ls-path"><span class="ls-expand-ico">▶</span><span class="ls-ico">📁</span> <span class="ls-parent">'+esc(sp.parent?sp.parent+'/':'')+'</span><span class="ls-name">'+esc(sp.name)+'</span>'+desc+' <span style="color:var(--dim);font-size:10px;margin-left:4px">('+fc+')</span>'+qs+'</div><div class="ls-tags">'+tg+'</div></div>';
+  if(expanded){
+    h+='<div class="ls-children on">';
+    files.sort((a,b)=>a.name.localeCompare(b.name)).slice(0,200).forEach(fi=>{
+      const sz=fi.size>1048576?(fi.size/1048576).toFixed(1)+'MB':fi.size>1024?(fi.size/1024).toFixed(0)+'KB':fi.size+'B';
+      h+='<div class="ls-child-row"><span class="ls-ico">'+fileIcon(fi.ext)+'</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(fi.name)+'</span>'+(settings.showSize?'<span style="margin-left:auto;font-size:10px;color:var(--dim);flex-shrink:0">'+sz+'</span>':'')+'</div>';
+    });
+    if(files.length>200)h+='<div class="ls-child-row" style="color:var(--dim);font-style:italic">...他 '+(files.length-200)+' ファイル</div>';
+    h+='</div>';
+  }
+  return h;
+}
+
+function renderList(el,q){
+  let fl=filtered().filter(f=>f.path!=='/');
+  // If unified search is active, results are already filtered+sorted by score
+  if(!_searchResults&&q)fl=fl.filter(f=>f.path.toLowerCase().includes(q)||f.tags.some(t=>t.toLowerCase().includes(q)));
+
+  let totalFiles=0;
+  fl.forEach(f=>{totalFiles+=getFilteredFiles(f.path,null).length});
+
+
+  // Keep score order for search results, alphabetical otherwise
+  _vsList=_searchResults?fl:fl.sort((a,b)=>a.path.localeCompare(b.path));
+  const CHUNK=80;
+
+  el.innerHTML='<div class="lst" id="vsLst"></div>';
+
+  let rendered=0;
+  const lst=document.getElementById('vsLst');
+
+  function renderChunk(){
+    if(rendered>=_vsList.length)return;
+    const end=Math.min(rendered+CHUNK,_vsList.length);
+    let h='';
+    for(let i=rendered;i<end;i++){h+=renderListRow(_vsList[i],i,q)}
+    const frag=document.createElement('div');
+    frag.innerHTML=h;
+    while(frag.firstChild)lst.appendChild(frag.firstChild);
+    rendered=end;
+  }
+
+  renderChunk();
+
+  // Load more on scroll
+  const ct=document.getElementById('ct');
+  ct._vsHandler=function(){
+    if(ct.scrollTop+ct.clientHeight>=ct.scrollHeight-400){renderChunk();setTimeout(initThumbObserver,20)}
+  };
+  ct.addEventListener('scroll',ct._vsHandler);
+}
+
+window.tglLsFolder=function(el){
+  const idx=+el.dataset.idx;
+  if(_vsExpandedIdx.has(idx)){
+    _vsExpandedIdx.delete(idx);
+    el.classList.remove('exp');
+    const ch=el.nextElementSibling;
+    if(ch&&ch.classList.contains('ls-children'))ch.remove();
+  } else {
+    _vsExpandedIdx.add(idx);
+    el.classList.add('exp');
+    const f=_vsList[idx];
+    if(!f)return;
+    const q=document.getElementById('q').value.toLowerCase();
+    const files=getFilteredFiles(f.path,q);
+    let h='<div class="ls-children on">';
+    files.sort((a,b)=>a.name.localeCompare(b.name)).slice(0,200).forEach(fi=>{
+      const sz=fi.size>1048576?(fi.size/1048576).toFixed(1)+'MB':fi.size>1024?(fi.size/1024).toFixed(0)+'KB':fi.size+'B';
+      h+='<div class="ls-child-row"><span class="ls-ico">'+fileIcon(fi.ext)+'</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(fi.name)+'</span>'+(settings.showSize?'<span style="margin-left:auto;font-size:10px;color:var(--dim);flex-shrink:0">'+sz+'</span>':'')+'</div>';
+    });
+    if(files.length>200)h+='<div class="ls-child-row" style="color:var(--dim);font-style:italic">...他 '+(files.length-200)+' ファイル</div>';
+    h+='</div>';
+    el.insertAdjacentHTML('afterend',h);
+  }
+};
+
+function fileIcon(ext){
+  const map={'.jpg':'🖼','.jpeg':'🖼','.png':'🖼','.gif':'🖼','.webp':'🖼','.svg':'🖼','.bmp':'🖼','.tiff':'🖼',
+    '.mp4':'🎬','.mov':'🎬','.avi':'🎬','.mkv':'🎬','.webm':'🎬',
+    '.mp3':'🎵','.wav':'🎵','.flac':'🎵','.ogg':'🎵','.aac':'🎵',
+    '.pdf':'📄','.doc':'📄','.docx':'📄','.txt':'📄','.rtf':'📄','.odt':'📄',
+    '.zip':'📦','.rar':'📦','.7z':'📦','.tar':'📦','.gz':'📦',
+    '.psd':'🎨','.ai':'🎨','.clip':'🎨','.sai':'🎨',
+    '.blend':'🧊','.fbx':'🧊','.obj':'🧊','.gltf':'🧊',
+    '.fla':'✏️','.swf':'✏️',
+    '.exe':'⚙️','.msi':'⚙️','.bat':'⚙️','.sh':'⚙️',
+    '.csv':'📊','.xlsx':'📊','.xls':'📊','.json':'📊',
+    '.html':'🌐','.htm':'🌐','.url':'🔗',
+    '.prproj':'🎞','.sboard':'📋',
+    '.goodnotes':'📓','.hks':'⌨️'};
+  return map[ext]||'📎';
+}
+
+// ── Overview ──
+function renderOverview(el){
+  let h='<div class="ov">';
+  DATA.groups.forEach(g=>{
+    const activeTags=g.children.filter(t=>(DATA.tagIndex[t.title]||[]).length>0);
+    if(activeTags.length===0)return;
+    const maxCount=Math.max(...activeTags.map(t=>(DATA.tagIndex[t.title]||[]).length),1);
+    h+='<div class="ov-card"><h4><span class="dot" style="background:'+g.color+'"></span>'+esc(g.title)+'</h4>';
+    activeTags.forEach(t=>{
+      const c=(DATA.tagIndex[t.title]||[]).length;
+      const pct=Math.round(c/maxCount*100);
+      const isActive=filters.has(t.title);
+      const actStyle=isActive?'background:var(--blue-bg);border:1px solid var(--blue);':'';
+      h+='<div class="ov-bar" style="'+actStyle+'" data-t="'+esc(t.title)+'" onclick="tglF(this.dataset.t)"><span class="lb" title="'+esc(t.title)+'">'+esc(t.title)+'</span><span class="br"><span class="br-f" style="width:'+pct+'%;background:'+g.color+'"></span></span><span class="vl">'+c+'</span></div>';
+    });
+    h+='</div>';
+  });
+
+  // Quick stats
+  const totalTags=Object.keys(DATA.tagIndex).length;
+  const totalFolders=DATA.folders.length;
+  const avgTags=(DATA.folders.reduce((a,f)=>a+f.tags.length,0)/totalFolders).toFixed(1);
+  h+='<div class="ov-card"><h4><span class="dot" style="background:var(--dim2)"></span>統計</h4>';
+  h+='<div style="font-size:12px;line-height:1.8;color:var(--dim2)">';
+  h+='フォルダ数: <b style="color:var(--text)">'+totalFolders+'</b><br>';
+  h+='ユニークタグ: <b style="color:var(--text)">'+totalTags+'</b><br>';
+  h+='平均タグ/フォルダ: <b style="color:var(--text)">'+avgTags+'</b><br>';
+  h+='タググループ: <b style="color:var(--text)">'+DATA.groups.length+'</b>';
+  h+='</div></div>';
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+// ── Folder Tree ──
+function renderFolder(el,q){
+  const fl=filtered();
+  const fps=new Set(fl.map(f=>f.path));
+
+  const tree={};
+  DATA.folders.forEach(f=>{
+    const ps=f.path.split('/').filter(Boolean);
+    let n=tree;
+    ps.forEach((p,i)=>{
+      if(!n[p])n[p]={_c:{},_t:[],_p:'/'+ps.slice(0,i+1).join('/')};
+      if(i===ps.length-1)n[p]._t=f.tags;
+      n=n[p]._c;
+    });
+  });
+
+  function hasMatchingChild(nd){
+    for(const k of Object.keys(nd._c)){
+      if(fps.has(nd._c[k]._p))return true;
+      if(hasMatchingChild(nd._c[k]))return true;
+    }
+    return false;
+  }
+
+  let treeFileId=0;
+  function rn(ch,d){
+    let h='';
+    Object.keys(ch).sort().forEach(name=>{
+      const nd=ch[name];
+      const hc=Object.keys(nd._c).length>0;
+      let files=_folderFiles[nd._p]||[];
+    
+      if(q)files=files.filter(fi=>fi.name.toLowerCase().includes(q));
+      const hasFiles=files.length>0;
+      const hasChildren=hc||hasFiles;
+
+      const m=fps.has(nd._p);
+      const sm=q?(name.toLowerCase().includes(q)||nd._t.some(t=>t.toLowerCase().includes(q))):true;
+      if(q&&!sm&&!hc&&!hasFiles)return;
+      if(filters.size>0&&!m&&!hasMatchingChild(nd))return;
+      const cls=filters.size&&m?' hi':'';
+
+      // Direct tags
+      let tg=nd._t.map(t=>'<span class="mt" style="background:'+col(t)+'" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)">'+esc(t)+'</span>').join('');
+      // Inherited tags
+      if(settings.showInherited){
+        const inh=getInheritedTags(nd._p);
+        if(inh.length)tg+=inh.map(t=>'<span class="mt" style="background:'+col(t)+';opacity:.3" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)" title="継承: '+esc(t)+'">'+esc(t)+'</span>').join('');
+      }
+      const fc=hasFiles?' <span style="color:var(--dim);font-size:9px;margin-left:2px">['+files.length+']</span>':'';
+      const desc=descSpan(name);
+      const open=d<2||(q&&sm);
+
+      const th=thumbHtml(nd._p);
+      h+='<div class="fn'+(d===0?' r':'')+'"><div class="fr'+cls+(open&&hasChildren?' exp':'')+'" onclick="tglFd(this)" data-fp="'+esc(nd._p)+'" style="'+(th?'align-items:flex-start':'')+'">'+th+'<span class="ic">'+(hasChildren?'▶':'·')+'</span><span class="nm">'+esc(name)+desc+fc+'</span><span class="tgs">'+tg+'</span></div>';
+      if(hasChildren){
+        h+='<div class="fc'+(d<2?' guide':'')+(open?' on':'')+'" data-loaded="'+(d<2?'1':'0')+'">';
+        if(d<2){
+          h+=rn(nd._c,d+1);
+        }
+        h+='</div>';
+      }
+      h+='</div>';
+    });
+    return h;
+  }
+
+  el.innerHTML=rn(tree,0)||'<div class="empty">フィルタに一致するフォルダがありません</div>';
+}
+
+// Find tree node by path
+function findTreeNode(path){
+  const ps=path.split('/').filter(Boolean);
+  let n=_tree;
+  for(const p of ps){if(!n[p])return null;if(ps.indexOf(p)===ps.length-1)return n[p];n=n[p]._c;}
+  return null;
+}
+// Render subtree for lazy expand
+function renderSubtree(nd){
+  let h='';
+  Object.keys(nd._c).sort().forEach(name=>{
+    const child=nd._c[name];
+    const hc=Object.keys(child._c).length>0;
+    const fc=_folderFileCount[child._p]||0;
+    const fcStr=fc?' <span style="color:var(--dim);font-size:9px;margin-left:2px">['+fc+']</span>':'';
+    let tg=child._t.map(t=>'<span class="mt" style="background:'+col(t)+'" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)">'+esc(t)+'</span>').join('');
+    const desc=descSpan(name);
+    const th=thumbHtml(child._p);
+    h+='<div class="fn"><div class="fr" onclick="tglFd(this)" data-fp="'+esc(child._p)+'" style="'+(th?'align-items:flex-start':'')+'">'+th+'<span class="ic">'+(hc||fc?'▶':'·')+'</span><span class="nm">'+esc(name)+desc+fcStr+'</span><span class="tgs">'+tg+'</span></div>';
+    if(hc||fc){h+='<div class="fc guide" data-loaded="0"></div>';}
+    h+='</div>';
+  });
+  return h;
+}
+window.tglFd=function(el){
+  const c=el.nextElementSibling;
+  if(c&&c.classList.contains('fc')){
+    c.classList.toggle('on');el.classList.toggle('exp');
+    if(c.classList.contains('on')&&c.dataset.loaded==='0'){
+      c.dataset.loaded='1';
+      const fp=el.dataset.fp;
+      const nd=findTreeNode(fp);
+      let h='';
+      if(nd)h+=renderSubtree(nd);
+      c.insertAdjacentHTML('beforeend',h);
+      setTimeout(initThumbObserver,20);
+    }
+  }
+};
+
+window.expandAll=function(){document.querySelectorAll('.fc').forEach(e=>e.classList.add('on'));document.querySelectorAll('.fr').forEach(e=>{if(e.nextElementSibling&&e.nextElementSibling.classList.contains('fc'))e.classList.add('exp')})};
+window.collapseAll=function(){document.querySelectorAll('.fc').forEach(e=>e.classList.remove('on'));document.querySelectorAll('.fr.exp').forEach(e=>e.classList.remove('exp'))};
+
+// ── Tag Tree ──
+function renderTagTree(el,q){
+  let h='';
+  DATA.groups.forEach(g=>{
+    const kids=g.children.filter(t=>{
+      if(q&&!t.title.toLowerCase().includes(q))return false;
+      return(DATA.tagIndex[t.title]||[]).length>0;
+    });
+    if(kids.length===0)return;
+
+    h+='<div class="tt-g"><h3 style="color:'+g.color+'">'+esc(g.title)+' <span style="font-size:10px;color:var(--dim);font-weight:400">'+kids.length+' tags</span></h3>';
+    kids.sort((a,b)=>(DATA.tagIndex[b.title]||[]).length-(DATA.tagIndex[a.title]||[]).length);
+    kids.forEach(t=>{
+      const folders=DATA.tagIndex[t.title]||[];
+      const a=filters.has(t.title);
+      h+='<div class="tt-r"><div class="tt-h'+(a?' on':'')+'" onclick="tglTT(this)" style="'+(a?'background:var(--blue-bg)':'')+'"><span class="a">▶</span><span class="bg" style="background:'+g.color+'">'+esc(t.title)+'</span><span style="color:var(--dim);font-size:10px">'+folders.length+'</span></div><div class="tt-f">';
+      [...folders].sort().forEach(f=>{
+        const short=f.split('/').slice(-2).join('/');
+        h+='<div class="tt-fl" title="'+esc(f)+'">'+esc(short)+'</div>';
+      });
+      h+='</div></div>';
+    });
+    h+='</div>';
+  });
+  el.innerHTML=h||'<div class="empty">タグが見つかりません</div>';
+}
+
+window.tglTT=function(el){el.classList.toggle('on');el.nextElementSibling.classList.toggle('on')};
+
+// ── Keyboard Shortcuts ──
+document.addEventListener('keydown',function(e){
+  // Escape: clear all filters
+  if(e.key==='Escape'){
+    e.preventDefault();
+    clearFilters();
+    document.getElementById('q').value='';
+    document.getElementById('q').blur();
+    update();
+  }
+  // / : focus search (only if not in input)
+  if(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='SELECT'&&document.activeElement.tagName!=='TEXTAREA'){
+    e.preventDefault();
+    document.getElementById('q').focus();
+  }
+});
+
+// Mobile sidebar
+window.openSide=function(){document.getElementById('sidePanel').classList.add('open');document.getElementById('mobOverlay').classList.add('on')};
+window.closeSide=function(){document.getElementById('sidePanel').classList.remove('open');document.getElementById('mobOverlay').classList.remove('on')};
+// Mobile search sync
+const qMob=document.getElementById('qMob');
+if(qMob){qMob.addEventListener('input',()=>{document.getElementById('q').value=qMob.value;showSuggest(qMob.value);update()})}
+
+// Smart search suggest
+function showSuggest(q){
+  const sg=document.getElementById('suggest');
+  if(!q||q.length<1){sg.classList.remove('on');return}
+  const tags=smartSearch(q);
+  if(!tags.length){sg.classList.remove('on');return}
+  let h='<div class="suggest-label">タグ候補（クリックでフィルタ追加）</div>';
+  tags.slice(0,15).forEach(t=>{
+    const c=(DATA.tagIndex[t]||[]).length;
+    h+='<div class="suggest-item" data-t="'+esc(t)+'" onclick="tglF(this.dataset.t);document.getElementById(\x27suggest\x27).classList.remove(\x27on\x27)"><span class="s-tag" style="background:'+col(t)+'">'+esc(t)+'</span><span class="s-count">'+c+'件</span></div>';
+  });
+  sg.innerHTML=h;
+  sg.classList.add('on');
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.side-head'))document.getElementById('suggest').classList.remove('on')});
+
+// Init
+loadSettings();
+document.getElementById('q').addEventListener('input',()=>{
+  const v=document.getElementById('q').value;
+  showSuggest(v);
+  update();
+  if(qMob)qMob.value=v;
+});
+update();
+} // end startApp
+</script>
+</body>
+</html>

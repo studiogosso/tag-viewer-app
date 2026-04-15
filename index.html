@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tag Viewer</title>
+<style>
+:root {
+  --bg:#0a0e17; --bg2:#111827; --bg3:#1a2236; --bg4:#243049;
+  --border:#263354; --text:#e2e8f0; --dim:#4d6080; --dim2:#8fa3c0;
+  --blue:#3b82f6; --blue-bg:rgba(59,130,246,.12);
+  --accent:#6366f1; --accent-bg:rgba(99,102,241,.1);
+  --card-shadow:0 2px 8px rgba(0,0,0,.3),0 1px 2px rgba(0,0,0,.2);
+  --radius:8px; --radius-lg:12px;
+  --row-gap:2px; --tap-min:36px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;font-size:14px;-webkit-font-smoothing:antialiased}
+
+/* Sidebar */
+.side{width:260px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.side-head{padding:10px;border-bottom:1px solid var(--border)}
+.side-head input{width:100%;padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;outline:none}
+.side-head input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+.side-body{flex:1;overflow-y:auto;padding:4px 6px}
+.grp{margin-bottom:1px}
+.grp-h{display:flex;align-items:center;padding:6px 8px;cursor:pointer;border-radius:5px;color:var(--dim2);font-weight:600;font-size:12px;user-select:none;gap:4px}
+.grp-h:hover{background:var(--bg3)}
+.grp-h .a{width:12px;font-size:9px;transition:transform .12s}
+.grp-h.on .a{transform:rotate(90deg)}
+.grp-h .c{margin-left:auto;font-size:11px;color:var(--dim)}
+.grp-b{display:none;padding-left:6px}
+.grp-b.on{display:block}
+.ti{display:flex;align-items:center;padding:4px 8px;cursor:pointer;border-radius:4px;gap:5px;min-height:30px}
+.ti:hover{background:var(--bg3)}
+.ti.act{background:var(--blue-bg);border-left:3px solid var(--blue);padding-left:5px}
+.bg{padding:3px 10px;border-radius:50px;font-size:11px;color:#fff;white-space:nowrap;letter-spacing:.3px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.ti .n{margin-left:auto;font-size:11px;color:var(--dim2)}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.bar{display:flex;align-items:center;padding:6px 12px;gap:6px;border-bottom:1px solid var(--border);background:var(--bg2);flex-wrap:wrap}
+.tab{padding:6px 12px;border-radius:5px;cursor:pointer;color:var(--dim2);font-size:13px;border:1px solid transparent;transition:background .12s,color .12s}
+.tab.on{color:var(--text);background:var(--bg3);border-color:var(--border);box-shadow:inset 0 -2px 0 var(--blue)}
+.tab:hover{color:var(--text);background:var(--bg3)}
+.btn{padding:5px 10px;border-radius:5px;cursor:pointer;color:var(--dim2);font-size:12px;background:none;border:1px solid var(--border);transition:background .12s,color .12s}
+.btn:hover{color:var(--text);background:var(--bg3)}
+.mode-btn{color:var(--blue);border-color:var(--blue);font-size:11px;font-weight:700;transition:all .2s;position:relative}
+.mode-btn.or{color:#f0883e;border-color:#f0883e;background:rgba(240,136,62,.08)}
+.mode-btn .mode-label{font-size:10px;font-weight:400;margin-left:4px;opacity:.7}
+.mode-btn .mode-hint{display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:11px;font-weight:400;color:var(--dim2);white-space:nowrap;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.4);margin-bottom:4px}
+.mode-btn:hover .mode-hint{display:block}
+.sep{width:1px;height:16px;background:var(--border)}
+.flt{display:flex;gap:3px;flex-wrap:wrap;flex:1}
+.ft{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:8px;font-size:11px;color:#fff;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.5);transition:opacity .12s}
+.ft:hover{opacity:.85}
+.sts{font-size:11px;color:var(--dim);white-space:nowrap}
+
+/* Overview */
+.ov{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.ov-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;box-shadow:var(--card-shadow);transition:transform .15s,box-shadow .15s}
+.ov-card:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.ov-card h4{font-size:13px;color:var(--dim2);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.ov-card h4 .dot{width:8px;height:8px;border-radius:50%}
+.ov-bar{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:12px;cursor:pointer;padding:5px 6px;border-radius:4px;transition:background .15s,transform .1s;position:relative}
+.ov-bar:hover{background:var(--bg3);transform:translateX(2px)}
+.ov-bar:active{transform:scale(.98)}
+.ov-bar .lb{min-width:60px;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dim2);transition:color .15s}
+.ov-bar:hover .lb{color:var(--text)}
+.ov-bar .br{flex:1;height:18px;background:var(--bg);border-radius:5px;position:relative;overflow:hidden}
+.ov-bar .br-f{position:absolute;left:0;top:0;height:100%;border-radius:5px;transition:width .5s cubic-bezier(.4,0,.2,1);background-image:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,.08) 50%,rgba(255,255,255,0) 100%);background-size:200% 100%;animation:barShimmer 3s ease-in-out infinite}
+@keyframes barShimmer{0%,100%{background-position:200% 0}50%{background-position:-200% 0}}
+.ov-bar:hover .br-f{filter:brightness(1.2)}
+.ov-bar .vl{width:28px;text-align:right;font-size:11px;color:var(--dim)}
+.ov-bar .ov-tip{display:none;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--text);white-space:nowrap;z-index:20;box-shadow:0 4px 12px rgba(0,0,0,.4);pointer-events:none}
+.ov-bar:hover .ov-tip{display:block}
+
+.content{flex:1;overflow-y:auto;padding:14px 16px}
+
+/* Folder Tree */
+.fn{margin-left:14px}
+.fn.r{margin-left:0}
+.fr{display:flex;align-items:center;padding:4px 8px;border-radius:5px;cursor:pointer;gap:5px;min-height:28px}
+.fr:hover{background:var(--bg3)}
+.fr .ic{color:var(--dim2);font-size:10px;width:12px;flex-shrink:0;transition:transform .12s}
+.fr.exp .ic{transform:rotate(90deg)}
+.fr .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.fr .tgs{display:flex;gap:3px;flex-wrap:wrap;margin-left:auto;flex-shrink:0}
+.fr .mt{padding:2px 6px;border-radius:6px;font-size:10px;color:#fff;cursor:pointer;text-shadow:0 1px 2px rgba(0,0,0,.5);transition:opacity .1s}
+.fr .mt:hover{opacity:1;outline:1px solid rgba(255,255,255,.25)}
+.fc{display:none}
+.fc.on{display:block}
+.fr.hi{background:var(--blue-bg);border-left:3px solid var(--blue);padding-left:5px}
+.fr.lo{opacity:.2}
+.fr.loc-cur{background:linear-gradient(90deg,rgba(59,130,246,.15),transparent);border-left:3px solid var(--blue);padding-left:5px;animation:locPulse .8s ease-out}
+@keyframes locPulse{0%{background:rgba(59,130,246,.3)}100%{background:linear-gradient(90deg,rgba(59,130,246,.15),transparent)}}
+.guide{border-left:1px solid var(--dim);margin-left:5px;padding-left:9px;opacity:.4}
+/* Tag Tree group collapse */
+.tt-g-head{display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:pointer;border-bottom:1px solid var(--border);margin-bottom:2px;user-select:none}
+.tt-g-head:hover{background:var(--bg3)}
+.tt-g-head .tt-arrow{font-size:9px;width:12px;transition:transform .12s}
+.tt-g-head.on .tt-arrow{transform:rotate(90deg)}
+.tt-g-body{display:none}
+.tt-g-body.on{display:block}
+/* Tag tree folder link */
+.tt-fl{padding:4px 8px;font-size:12px;color:#58a6ff;border-radius:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:26px;display:flex;align-items:center;cursor:pointer;transition:background .1s}
+.tt-fl:hover{background:var(--bg3);text-decoration:underline}
+
+/* Tag Tree */
+.tt-g{margin-bottom:14px}
+.tt-g h3{padding:5px 8px;font-size:12px;border-bottom:1px solid var(--border);margin-bottom:2px}
+.tt-r{margin-left:6px}
+.tt-h{display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;border-radius:5px;font-size:13px;min-height:32px}
+.tt-h:hover{background:var(--bg3)}
+.tt-h .a{font-size:9px;width:12px;transition:transform .12s}
+.tt-h.on .a{transform:rotate(90deg)}
+.tt-f{display:none;padding-left:18px}
+.tt-f.on{display:block}
+
+/* Flat List */
+.lst{display:flex;flex-direction:column;gap:1px}
+.ls-row{display:flex;align-items:flex-start;padding:6px 12px;border-radius:5px;gap:10px;flex-wrap:wrap;min-height:32px}
+.ls-row:hover{background:var(--bg3)}
+.ls-path{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ls-parent{color:var(--dim2);font-size:12px}
+.ls-name{color:var(--text);font-size:13px}
+.ls-tags{display:flex;gap:3px;flex-wrap:wrap;flex-shrink:0}
+.ls-file{opacity:.85}
+.ls-file .ls-name{color:var(--dim2)}
+.ls-ico{width:16px;display:inline-block;text-align:center;font-size:11px;flex-shrink:0}
+.ls-meta{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.ls-sz{font-size:10px;color:var(--dim);min-width:45px;text-align:right}
+
+
+/* Tree file rows */
+.tf-row{display:flex;align-items:center;padding:3px 8px 3px 24px;gap:5px;font-size:12px;color:var(--dim2);border-radius:4px;min-height:26px}
+.tf-row:hover{background:var(--bg3)}
+.tf-ico{width:14px;text-align:center;flex-shrink:0}
+.tf-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tf-sz{margin-left:auto;font-size:10px;color:var(--dim);flex-shrink:0}
+
+/* List expandable folder */
+.ls-folder-row{cursor:pointer}
+.ls-folder-row:hover{background:var(--bg3)}
+.ls-expand-ico{font-size:9px;width:14px;display:inline-block;transition:transform .12s;color:var(--dim2)}
+.ls-folder-row.exp .ls-expand-ico{transform:rotate(90deg)}
+.ls-children{display:none;margin-left:24px}
+.ls-children.on{display:block}
+.ls-child-row{display:flex;align-items:center;padding:4px 12px;gap:8px;font-size:12px;color:var(--dim2);border-radius:4px;min-height:26px}
+.ls-child-row:hover{background:var(--bg3)}
+
+/* Overview count emphasis */
+.ov-bar .vl{width:36px;text-align:right;font-size:12px;color:var(--text);font-weight:600;transition:transform .15s}
+.ov-bar:hover .vl{transform:scale(1.15)}
+
+.empty{padding:30px;text-align:center;color:var(--dim)}
+
+/* Welcome banner */
+.welcome{margin:16px;padding:20px 24px;background:linear-gradient(135deg,rgba(59,130,246,.12),rgba(99,102,241,.08));border:1px solid var(--blue);border-radius:var(--radius-lg);position:relative;animation:welcomeFade .5s ease-out}
+@keyframes welcomeFade{0%{opacity:0;transform:translateY(-10px)}100%{opacity:1;transform:translateY(0)}}
+.welcome h3{font-size:16px;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.welcome p{font-size:13px;color:var(--dim2);line-height:1.6;margin-bottom:6px}
+.welcome .w-tips{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.welcome .w-tip{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--dim2);flex:1;min-width:140px}
+.welcome .w-tip b{color:var(--text);display:block;margin-bottom:2px}
+.welcome .w-close{position:absolute;top:10px;right:14px;background:none;border:none;color:var(--dim2);cursor:pointer;font-size:18px;line-height:1;padding:4px}
+.welcome .w-close:hover{color:var(--text)}
+
+/* Source badge */
+.src-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:.3px;flex-shrink:0;border:1px solid}
+.src-badge.notion{color:#f57c00;border-color:rgba(245,124,0,.4);background:rgba(245,124,0,.08)}
+.src-badge.nas{color:#00acc1;border-color:rgba(0,172,193,.4);background:rgba(0,172,193,.08)}
+.src-badge.local{color:#66bb6a;border-color:rgba(102,187,106,.4);background:rgba(102,187,106,.08)}
+
+/* Overview drilldown preview */
+.ov-drill{margin-top:6px;padding:6px 0;border-top:1px solid var(--border);animation:drillSlide .2s ease-out}
+@keyframes drillSlide{0%{opacity:0;max-height:0}100%{opacity:1;max-height:300px}}
+.ov-drill-item{display:flex;align-items:center;gap:6px;padding:4px 6px;font-size:11px;color:var(--dim2);border-radius:4px;cursor:pointer;transition:background .1s}
+.ov-drill-item:hover{background:var(--bg3);color:var(--text)}
+.ov-drill-item .odi-path{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.ov-drill-item .odi-count{font-size:10px;color:var(--dim);flex-shrink:0}
+.ov-drill-more{font-size:10px;color:var(--blue);cursor:pointer;padding:4px 6px;text-align:center}
+.ov-drill-more:hover{text-decoration:underline}
+
+/* Search result: larger thumbs */
+.search-active .thumb-img{width:64px;height:64px}
+@media(max-width:768px){.search-active .thumb-img{width:56px;height:56px}}
+
+/* Breadcrumb */
+.breadcrumb{padding:8px 16px;font-size:12px;color:var(--dim2);border-bottom:1px solid var(--border);background:var(--bg2);display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.breadcrumb .bc-seg{cursor:pointer;padding:2px 6px;border-radius:4px;transition:background .1s}
+.breadcrumb .bc-seg:hover{background:var(--bg3);color:var(--text)}
+.breadcrumb .bc-sep{color:var(--dim);font-size:10px}
+.breadcrumb .bc-cur{color:var(--text);font-weight:600}
+
+/* Options panel */
+.opt-btn{padding:3px 8px;border-radius:4px;cursor:pointer;color:var(--dim2);font-size:14px;background:none;border:1px solid var(--border);position:relative;line-height:1}
+.opt-btn:hover{color:var(--text);background:var(--bg3)}
+.opt-panel{display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;min-width:240px;z-index:100;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.opt-panel.on{display:block}
+.opt-panel h4{font-size:12px;color:var(--dim2);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.opt-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:13px;border-bottom:1px solid var(--border)}
+.opt-row:last-child{border-bottom:none}
+.opt-row label{color:var(--text);cursor:pointer}
+.opt-toggle{position:relative;width:32px;height:18px;cursor:pointer}
+.opt-toggle input{opacity:0;width:0;height:0}
+.opt-toggle .slider{position:absolute;inset:0;background:var(--bg4);border-radius:9px;transition:.2s}
+.opt-toggle .slider:before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--dim2);border-radius:50%;transition:.2s}
+.opt-toggle input:checked+.slider{background:var(--blue)}
+.opt-toggle input:checked+.slider:before{transform:translateX(14px);background:#fff}
+.opt-select{background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:11px;padding:2px 6px;border-radius:4px;outline:none}
+.opt-select:focus{border-color:var(--blue)}
+
+/* Folder descriptions */
+.fdesc{font-size:11px;color:var(--dim2);margin-left:6px;font-style:italic}
+.fr .fdesc{font-size:10px;color:var(--dim2)}
+
+/* Quick stats dots */
+.qs-bar{display:flex;gap:1px;margin-left:6px;flex-shrink:0;align-items:center}
+.qs-seg{height:7px;border-radius:2px;min-width:3px}
+
+/* Notion links */
+.notion-link{display:block;padding:4px 6px;color:var(--text);text-decoration:none;font-size:12px;border-radius:4px}
+.notion-link:hover{background:var(--bg3)}
+
+/* Smart search suggest */
+.suggest{position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border);border-radius:0 0 8px 8px;max-height:200px;overflow-y:auto;z-index:50;display:none;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.suggest.on{display:block}
+.suggest-item{padding:8px 12px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:8px;min-height:34px;transition:background .1s}
+.suggest-item:hover,.suggest-item.sg-active{background:var(--bg3)}
+.suggest-item.sg-active{border-left:3px solid var(--blue);padding-left:9px}
+.suggest-item .s-tag{padding:2px 8px;border-radius:6px;font-size:11px;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.suggest-item .s-count{margin-left:auto;color:var(--dim2);font-size:11px}
+.suggest-item .s-cat{font-size:10px;color:var(--dim);padding:1px 6px;border:1px solid var(--border);border-radius:4px;margin-left:4px}
+.suggest-label{padding:6px 12px;font-size:11px;color:var(--dim2);border-bottom:1px solid var(--border)}
+.suggest-hint{padding:4px 12px;font-size:10px;color:var(--dim);border-top:1px solid var(--border);display:flex;gap:8px}
+.suggest-hint kbd{background:var(--bg3);border:1px solid var(--border);border-radius:2px;padding:0 4px;font-size:10px}
+
+/* Device tags - border + distinct colors */
+.bg[data-t^="PC-"],.bg[data-t^="phone-"],.bg[data-t^="cloud-"],.bg[data-t="nas-direct"],.bg[data-t="notion"],.bg[data-t="obsidian"]{border:1.5px solid rgba(255,255,255,.35);text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.mt[data-t^="PC-"],.mt[data-t^="phone-"],.mt[data-t^="cloud-"],.mt[data-t="nas-direct"],.mt[data-t="notion"],.mt[data-t="obsidian"]{border:1.5px solid rgba(255,255,255,.35);text-shadow:0 1px 2px rgba(0,0,0,.4)}
+
+/* Mobile */
+@media(max-width:768px){
+  html,body{overflow-x:hidden;width:100%;max-width:100vw}
+  body{flex-direction:column}
+  .side{position:fixed;left:-100%;top:0;bottom:0;width:80vw;max-width:320px;z-index:200;transition:left .25s ease;box-shadow:4px 0 24px rgba(0,0,0,.6)}
+  .side.open{left:0}
+  .side-head input{padding:10px 12px;font-size:14px}
+  .grp-h{font-size:13px;padding:6px 8px}
+  .ti{min-height:44px;padding:8px 12px}
+  .ti .bg{font-size:13px;padding:4px 12px}
+  .ti.act{border-left:3px solid var(--blue);padding-left:9px}
+  .mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;backdrop-filter:blur(2px)}
+  .mob-overlay.on{display:block}
+  .mob-bar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:linear-gradient(180deg,var(--bg2),var(--bg));border-bottom:2px solid var(--border);position:sticky;top:0;z-index:100}
+  .mob-btn{background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:20px;padding:6px 12px;cursor:pointer;flex-shrink:0;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+  .mob-btn:active{transform:scale(.95);background:var(--blue-bg)}
+  .main{width:100%;max-width:100vw;height:100vh}
+  ::-webkit-scrollbar{width:0;height:0}
+  .bar{display:flex;gap:4px;padding:6px 8px;flex-wrap:wrap}
+  .bar .sep,.bar #modeBtn,.bar .sts,.bar .opt-btn,.bar .opt-panel{display:none!important}
+  .tab{padding:10px 14px;font-size:14px;white-space:nowrap;flex-shrink:0;min-height:40px}
+  .tab.on{background:var(--blue-bg)}
+  .btn{padding:8px 12px;font-size:13px;white-space:nowrap;flex-shrink:0;min-height:40px}
+  .flt{flex-wrap:wrap;gap:6px}
+  .ft{min-height:36px;padding:6px 14px;font-size:13px}
+  .ft:active{transform:scale(.95)}
+  .content{padding:8px}
+  .ls-row{flex-direction:column;align-items:flex-start!important;gap:8px;padding:12px 10px}
+  .ls-path{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ls-tags{max-height:none;flex-wrap:wrap;gap:4px}
+  .bg{padding:5px 14px;font-size:13px;min-height:32px;display:inline-flex;align-items:center}
+  .fr{min-height:40px;padding:8px 12px}
+  .fr .nm{font-size:14px}
+  .fr .mt{padding:4px 10px;font-size:12px}
+  .ov{grid-template-columns:1fr!important;padding:12px;gap:10px}
+  .ov-card{padding:14px;overflow:hidden}
+  .ov-bar{padding:10px 8px;min-height:44px;cursor:pointer}
+  .ov-bar .lb{min-width:70px;max-width:110px;font-size:14px}
+  .ov-bar .vl{font-size:14px}
+  .opt-panel{position:fixed!important;top:auto;bottom:60px;right:10px;left:10px;min-width:auto;z-index:300;max-height:60vh;overflow-y:auto;border-radius:12px}
+  .kb-hint{display:none}
+  .breadcrumb{font-size:13px;padding:8px 12px}
+  .breadcrumb .bc-seg{min-height:36px;display:inline-flex;align-items:center}
+  .thumb-img{width:44px;height:44px}
+  .notion-link{padding:10px 12px;font-size:14px;min-height:44px;display:flex;align-items:center}
+  .suggest{max-height:50vh}
+  .suggest-item{min-height:44px;padding:10px 14px}
+  .tt-h{font-size:14px;padding:10px 12px;min-height:44px}
+  .tt-fl{font-size:13px;padding:8px 12px;min-height:36px}
+}
+@media(min-width:769px){
+  .mob-bar{display:none}
+  .mob-overlay{display:none!important}
+}
+
+/* Thumbnails */
+.thumb-img{width:48px;height:48px;object-fit:cover;border-radius:5px;border:1px solid var(--border);flex-shrink:0;background:var(--bg);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease}
+.thumb-img:hover{transform:scale(1.8);z-index:10;position:relative;box-shadow:0 6px 20px rgba(0,0,0,.5);border-radius:4px}
+.thumb-img.lg{width:64px;height:64px}
+.thumb-placeholder{width:48px;height:48px;border-radius:4px;background:var(--bg3);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--dim)}
+
+/* Light theme */
+body.light{--bg:#f8fafc;--bg2:#ffffff;--bg3:#f1f5f9;--bg4:#e2e8f0;--border:#cbd5e1;--text:#0f172a;--dim:#64748b;--dim2:#475569;--blue:#2563eb;--blue-bg:rgba(37,99,235,.08);--card-shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04)}
+body.light ::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:10px}
+body.light ::-webkit-scrollbar-thumb:hover{background:#64748b}
+body.light .bg{text-shadow:0 1px 2px rgba(0,0,0,.3)}
+body.light .guide{border-left-color:#94a3b8}
+
+/* Keyboard hint */
+.kb-hint{position:fixed;bottom:12px;right:12px;background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:11px;color:var(--dim2);z-index:50;opacity:.5;transition:opacity .2s}
+.kb-hint:hover{opacity:1}
+.kb-hint kbd{background:var(--bg3);border:1px solid var(--border);border-radius:3px;padding:1px 5px;font-size:11px;font-family:inherit}
+
+/* AI Search */
+.ai-search-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;background:linear-gradient(135deg,rgba(99,102,241,.2),rgba(59,130,246,.15));border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;backdrop-filter:blur(8px);animation:aiBtnPulse 2s ease-in-out infinite}
+.ai-search-btn:hover{background:linear-gradient(135deg,rgba(99,102,241,.35),rgba(59,130,246,.25));transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,.3)}
+.ai-search-btn:active{transform:scale(.97)}
+.ai-search-btn:disabled{opacity:.5;cursor:not-allowed;animation:none}
+@keyframes aiBtnPulse{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,.2)}50%{box-shadow:0 0 0 6px rgba(99,102,241,0)}}
+.ai-search-area{padding:8px 0;display:none;animation:aiFadeIn .3s ease-out}
+.ai-search-area.on{display:block}
+@keyframes aiFadeIn{0%{opacity:0;transform:translateY(-6px)}100%{opacity:1;transform:translateY(0)}}
+.ai-result-card{margin:10px 0;padding:12px 16px;background:linear-gradient(135deg,rgba(99,102,241,.08),rgba(59,130,246,.05));border:1px solid rgba(99,102,241,.3);border-radius:var(--radius-lg);backdrop-filter:blur(8px);animation:aiFadeIn .4s ease-out}
+.ai-result-card .ai-explain{font-size:12px;color:var(--dim2);line-height:1.6;margin-bottom:8px}
+.ai-result-card .ai-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.ai-result-card .ai-tag{display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border-radius:6px;font-size:11px;color:#fff;cursor:pointer;background:var(--accent);transition:opacity .15s;text-shadow:0 1px 2px rgba(0,0,0,.4)}
+.ai-result-card .ai-tag:hover{opacity:.8}
+.ai-result-card .ai-tag.matched{background:var(--blue)}
+.ai-result-card .ai-close{float:right;background:none;border:none;color:var(--dim2);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px}
+.ai-result-card .ai-close:hover{color:var(--text);background:var(--bg3)}
+.ai-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(99,102,241,.3);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+.ai-key-status{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 8px;border-radius:4px}
+.ai-key-status.set{color:#66bb6a;background:rgba(102,187,106,.1)}
+.ai-key-status.unset{color:var(--dim);background:var(--bg3)}
+.opt-row .ai-key-input{flex:1;max-width:160px;padding:3px 8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:11px;outline:none;font-family:monospace}
+.opt-row .ai-key-input:focus{border-color:var(--accent)}
+.opt-row .ai-key-input::placeholder{color:var(--dim)}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--dim);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:var(--dim2)}
+</style>
+</head>
+<body>
+
+<div class="mob-overlay" id="mobOverlay" onclick="closeSide()"></div>
+<div class="side" id="sidePanel">
+  <div class="side-head" style="position:relative"><input id="q" placeholder="日本語でもOK... 例: 原画 呪術3期"><div class="suggest" id="suggest"></div><div class="ai-search-area" id="aiSearchArea"><button class="ai-search-btn" id="aiSearchBtn" onclick="runAiSearch()">🤖 AI検索</button></div></div>
+  <div id="mobFilters" style="display:none;padding:6px 8px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:4px"></div>
+  <div class="side-body" id="sb"></div>
+</div>
+<div class="main">
+  <div class="mob-bar"><button class="mob-btn" onclick="openSide()">☰</button><input id="qMob" placeholder="検索..." style="flex:1;min-width:0;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;outline:none"><span style="font-size:10px;color:var(--dim);white-space:nowrap;flex-shrink:0" id="mobSt"></span><button class="mob-btn" onclick="tglOpt(event)" style="font-size:14px;flex-shrink:0">⚙</button></div>
+  <div class="bar">
+    <div class="tab on" data-v="o" id="to">概要</div>
+    <div class="tab" data-v="l" id="tl">一覧</div>
+    <div class="tab" data-v="f" id="tf">ツリー</div>
+    <div class="tab" data-v="t" id="tg">タグ</div>
+    <div class="sep"></div>
+    <button class="btn" onclick="expandAll()">全開</button>
+    <button class="btn" onclick="collapseAll()">全閉</button>
+    <button class="btn" onclick="clearFilters()">リセット</button>
+    <div class="sep"></div>
+    <button class="btn mode-btn" id="modeBtn" onclick="toggleMode()" title="AND/OR切替" style="display:none;font-weight:700;min-width:36px">AND</button>
+    <div class="flt" id="flt"></div>
+    <div class="sts" id="st"></div>
+    <div class="sep"></div>
+    <div style="position:relative"><button class="opt-btn" onclick="tglOpt(event)" title="設定">⚙</button>
+    <div class="opt-panel" id="optPanel">
+      <h4>表示設定</h4>
+      <div class="opt-row"><label for="optDesc">フォルダ説明表示</label><label class="opt-toggle"><input type="checkbox" id="optDesc" onchange="setSetting('showDesc',this.checked)"><span class="slider"></span></label></div>
+      <div class="opt-row"><label for="optSize">ファイルサイズ表示</label><label class="opt-toggle"><input type="checkbox" id="optSize" onchange="setSetting('showSize',this.checked)" checked><span class="slider"></span></label></div>
+      <div class="opt-row"><label for="optThumb">サムネイル表示</label><label class="opt-toggle"><input type="checkbox" id="optThumb" onchange="setSetting('showThumbs',this.checked)"><span class="slider"></span></label></div>
+      <div class="opt-row"><label for="optEmpty">空フォルダ非表示</label><label class="opt-toggle"><input type="checkbox" id="optEmpty" onchange="setSetting('hideEmpty',this.checked)"><span class="slider"></span></label></div>
+      <div class="opt-row"><label for="optInherit">タグ継承表示</label><label class="opt-toggle"><input type="checkbox" id="optInherit" onchange="setSetting('showInherited',this.checked)"><span class="slider"></span></label></div>
+      <div class="opt-row"><label for="optLimit">表示件数</label><select class="opt-select" id="optLimit" onchange="setSetting('listLimit',+this.value)"><option value="500">500</option><option value="1000">1000</option><option value="2000" selected>2000</option><option value="5000">5000</option></select></div>
+      <div class="opt-row"><label for="optTheme">テーマ</label><select class="opt-select" id="optTheme" onchange="setSetting('theme',this.value)"><option value="dark">ダーク</option><option value="light">ライト</option></select></div>
+      <h4 style="margin-top:12px">AI検索</h4>
+      <div class="opt-row" style="flex-wrap:wrap;gap:6px"><label>Anthropic APIキー</label><input type="password" class="ai-key-input" id="aiKeyInput" placeholder="sk-ant-..." onchange="saveAiKey(this.value)" oninput="saveAiKey(this.value)"><span class="ai-key-status" id="aiKeyStatus"></span></div>
+      <div style="font-size:10px;color:var(--dim);padding:4px 0;line-height:1.4">キーはブラウザのlocalStorageに保存されます。サーバーには送信されません。</div>
+    </div></div>
+  </div>
+  <div id="breadcrumb" class="breadcrumb" style="display:none"></div>
+  <div id="aiResultArea"></div>
+  <div class="content" id="ct"></div>
+  <div class="kb-hint"><kbd>Esc</kbd> リセット &nbsp; <kbd>/</kbd> 検索</div>
+</div>
+
+<div id="loading" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:999;flex-direction:column;gap:16px">
+<div style="width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite"></div>
+<div style="color:var(--blue);font-size:18px;font-weight:600;letter-spacing:1px">Tag Viewer</div>
+<div style="color:var(--dim2);font-size:12px" id="loadPct">読み込み中...</div>
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+<script>
+let DATA;
+let TAG_MAP={synonyms:{},categories:{}};
+let NOTION_PAGES=[];
+async function init(){
+  // Load data.json step by step for debug
+  const lp=document.getElementById('loadPct');
+  try{
+    lp.textContent='1/5 data.json取得中...';
+    const res=await fetch('data.json');
+    lp.textContent='2/5 status:'+res.status+' 解析中...';
+    const text=await res.text();
+    lp.textContent='3/5 JSON解析中('+Math.round(text.length/1024/1024)+'MB)...';
+    DATA=JSON.parse(text);
+    lp.textContent='4/5 タグ構築中('+DATA.folders.length+'folders)...';
+    if(!DATA.tagIndex){
+      DATA.tagIndex={};
+      DATA.folders.forEach(f=>f.tags.forEach(t=>{if(!DATA.tagIndex[t])DATA.tagIndex[t]=[];DATA.tagIndex[t].push(f.path)}));
+    }
+    lp.textContent='5/5 追加データ読込中...';
+    try{
+      const extraRes=await fetch('data-extra.json');
+      if(extraRes.ok){const extra=JSON.parse(await extraRes.text());DATA.folderStats=extra.folderStats||{};DATA.thumbMap=extra.thumbMap||{};}
+    }catch{}
+    try{const mapRes=await fetch('tag_mapping.json');if(mapRes.ok)TAG_MAP=await mapRes.json();}catch{}
+    try{const nr=await fetch('notion_cache.json');if(nr.ok)NOTION_PAGES=await nr.json();}catch{}
+  }catch(e){
+    lp.textContent='エラー: '+e.message;
+    lp.style.color='#ef4444';
+    const spinner=document.querySelector('#loading div:first-child');
+    if(spinner)spinner.style.animation='none';
+    console.error('init error:',e);
+    return;
+  }
+  // Merge Notion pages into folders with 'notion' tag + their Notion tags
+  if(NOTION_PAGES.length){
+    // Build Notion tag mapping to NAS tags
+    const notionToNas={
+      'work':'work','JTK':'JTK','JTK3':'JTK3','animation':'animation',
+      'Hobby':'hobby','reading':'reading','knowledge':'knowledge',
+      'diary':'diary','Chow':'chow','money_diary':'money',
+      'English':'english','français':'french','INBOX':'inbox',
+      'memo':'memo','Organize':'organize','Task':'task',
+      'Lifestyle':'lifestyle','Reading':'reading','Thinking':'thinking'
+    };
+    NOTION_PAGES.forEach(p=>{
+      if(!p.name)return;
+      const ntags=['notion'];
+      // Keep original Notion tag names AND map to NAS equivalents
+      (p.tags||[]).forEach(t=>{
+        // Add full tag name (e.g. ".Work .JTK .season3")
+        ntags.push(t);
+        // Also add individual parts
+        t.split(/s+/).filter(s=>s.startsWith('.')).forEach(s=>{
+          const clean=s.replace('.','');
+          ntags.push(clean);
+          // Map to NAS tag if exists
+          if(notionToNas[clean]&&!ntags.includes(notionToNas[clean]))ntags.push(notionToNas[clean]);
+        });
+      });
+      const path='notion://'+p.name;
+      DATA.folders.push({path:path,tags:[...new Set(ntags)],depth:0,_notionUrl:p.url,_summary:p.summary||''});
+      [...new Set(ntags)].forEach(t=>{if(!DATA.tagIndex[t])DATA.tagIndex[t]=[];DATA.tagIndex[t].push(path)});
+    });
+  }
+  // Reorganize groups: source (top) + device (separate)
+  const srcGroup={title:'source',color:'#00acc1',children:[
+    {title:'nas-direct',type:'sidecar',color:'#00838f'},
+    {title:'notion',type:'sidecar',color:'#f57c00'},
+    {title:'obsidian',type:'sidecar',color:'#7c4dff'}
+  ]};
+  // Remove notion/obsidian from device group if present
+  const devGroup=DATA.groups.find(g=>g.title==='device');
+  if(devGroup)devGroup.children=devGroup.children.filter(c=>!['notion','obsidian','nas-direct'].includes(c.title));
+  // Add source group at top
+  DATA.groups=DATA.groups.filter(g=>g.title!=='source');
+  DATA.groups.unshift(srcGroup);
+  document.getElementById('loading').remove();
+  startApp();
+}
+init();
+function startApp(){
+
+const colors = {};
+DATA.groups.forEach(g => g.children.forEach(t => { colors[t.title] = g.color; }));
+
+let filters = new Set();
+let filterMode = 'and'; // 'and' or 'or'
+let view = 'o';
+
+// ── Folder Description Mapping ──
+const FOLDER_DESC = {
+  // Top-level Dewey categories
+  '0000_Inbox':'未整理',
+  '1000_Family':'家族・プライベート',
+  '2000_Creative':'個人創作・学習',
+  '3000_Work':'仕事（MAPPA）',
+  '4000_Finance':'金融・行政',
+  '9000_Backup':'バックアップ',
+  // 1xxx
+  '1100_Photos':'家族写真',
+  '1200_Travel':'旅行記録',
+  '1300_Health':'健康・医療',
+  // 2xxx Creative subfolders
+  '2100_Writing':'執筆・文章',
+  '2200_Music':'音楽制作・DTM',
+  '2300_Programming':'プログラミング',
+  '2400_Art':'個人アート',
+  '2500_GameDev':'ゲーム開発',
+  '2600_WebDev':'ウェブ開発',
+  '2700_Learning':'学習・講座',
+  '2800_3DCG':'3DCG・モデリング',
+  // 3xxx Work subfolders
+  '3100_References':'作画・演出資料',
+  '3200_Production':'制作物',
+  '3300_Tools':'ツール・設定',
+  '311_Drawing_Animation':'原画マン時代',
+  '312_Director_Animation':'演出/監督時代',
+  '318_NotDoneWork':'未完了/検討作品',
+  // 311 原画マン時代 - 作品別
+  '001_SKF':'スケットダンス',
+  '002_KSC':'坂道のアポロン',
+  '003_ERO':'残響のテロル',
+  '004_Fate':'Fate/Grand Order',
+  '005_NTZ':'この世界の片隅に',
+  '006_BC':'牙狼 VANISHING LINE',
+  '007_SAO':'ソードアート・オンライン',
+  '008_ERO_ova':'残響のテロル OVA',
+  '009_MOB2':'モブサイコ100 II',
+  '010_TYN':'体操ザムライ',
+  '011_FGO':'Fate/Grand Order 劇場版',
+  '012_GOH':'ゴッド・オブ・ハイスクール',
+  '013_JTK':'呪術廻戦 1期',
+  // 312 演出/監督時代 - 作品別
+  '001_JTK':'呪術廻戦 1期 (演出)',
+  '002_RKK':'ランキング・オブ・キングス',
+  '003_CSM':'チェンソーマン',
+  '004_JTK2':'呪術廻戦 2期',
+  // 32xx Production
+  '3210_JTK2':'呪術廻戦 2期',
+  '3220_JTK3':'呪術廻戦 3期',
+  '3230_JTK_movie2':'呪術廻戦 劇場版2',
+  // 4xxx Finance
+  '4100_Tax':'税金・確定申告',
+  '4200_Insurance':'保険',
+  '4300_Banking':'銀行・投資',
+  '4400_Legal':'法律・契約',
+  '4500_Admin':'行政手続き',
+  // Special
+  '_archive':'完了プロジェクト',
+  'PastProjects':'過去作品アーカイブ'
+};
+
+function getFolderDesc(name){return FOLDER_DESC[name]||''}
+function descSpan(name){
+  if(!settings.showDesc)return '';
+  const d=getFolderDesc(name);
+  return d?'<span class="fdesc">'+esc(d)+'</span>':'';
+}
+
+// ── Settings (persisted to localStorage) ──
+const DEFAULT_SETTINGS={showDesc:true,showSize:true,showThumbs:false,hideEmpty:false,showInherited:false,listLimit:2000,theme:'dark'};
+let settings={...DEFAULT_SETTINGS};
+function loadSettings(){
+  try{const s=localStorage.getItem('tagviewer_settings');if(s)settings={...DEFAULT_SETTINGS,...JSON.parse(s)}}catch(e){}
+  applySettings();
+}
+function saveSettings(){try{localStorage.setItem('tagviewer_settings',JSON.stringify(settings))}catch(e){}}
+function applySettings(){
+  document.getElementById('optDesc').checked=settings.showDesc;
+  document.getElementById('optSize').checked=settings.showSize;
+  document.getElementById('optThumb').checked=settings.showThumbs;
+  document.getElementById('optEmpty').checked=settings.hideEmpty;
+  document.getElementById('optInherit').checked=settings.showInherited;
+  document.getElementById('optLimit').value=settings.listLimit;
+  document.getElementById('optTheme').value=settings.theme;
+  document.body.classList.toggle('light',settings.theme==='light');
+}
+window.setSetting=function(k,v){settings[k]=v;saveSettings();applySettings();update()};
+window.tglOpt=function(e){e.stopPropagation();document.getElementById('optPanel').classList.toggle('on')};
+document.addEventListener('click',function(e){if(!e.target.closest('.opt-panel')&&!e.target.closest('.opt-btn'))document.getElementById('optPanel').classList.remove('on')});
+
+// ── Breadcrumb state ──
+let breadcrumbPath = '';
+function renderBreadcrumb(){
+  const bc=document.getElementById('breadcrumb');
+  if(!filters.size&&!breadcrumbPath){bc.style.display='none';return}
+  bc.style.display='flex';
+  let h='<span style="color:var(--dim);margin-right:2px">📂</span>';
+  if(filters.size){
+    h+='<span class="bc-seg bc-cur">フィルタ: '+[...filters].map(t=>'<span style="background:'+col(t)+';padding:2px 8px;border-radius:6px;font-size:11px;color:#fff;cursor:pointer" data-t="'+esc(t)+'" onclick="tglF(this.dataset.t)">'+esc(t)+' ×</span>').join(' ')+'</span>';
+    h+=' <span class="bc-sep">/</span> <span style="color:var(--dim)">'+filtered().length+' 一致</span>';
+  } else if(breadcrumbPath){
+    const parts=breadcrumbPath.split('/').filter(Boolean);
+    parts.forEach((p,i)=>{
+      if(i>0)h+='<span class="bc-sep">›</span>';
+      h+='<span class="bc-seg">'+esc(p)+'</span>';
+    });
+  }
+  bc.innerHTML=h;
+  // Mobile: show active filters in sidebar header
+  const mf=document.getElementById('mobFilters');
+  if(mf){
+    if(!filters.size){mf.style.display='none';return}
+    mf.style.display='flex';
+    mf.innerHTML=[...filters].map(t=>'<span style="background:'+col(t)+';padding:3px 10px;border-radius:8px;font-size:12px;color:#fff;cursor:pointer" data-t="'+esc(t)+'" onclick="tglF(this.dataset.t)">'+esc(t)+' ×</span>').join('')+'<span style="color:var(--blue);font-size:11px;cursor:pointer;padding:3px 6px" onclick="setTimeout(clearFilters,0)">全解除</span>';
+  }
+}
+
+// ── Tag inheritance (collect parent tags) ── P1: use _pathMap for O(1) lookup
+function getInheritedTags(folderPath){
+  if(!settings.showInherited)return[];
+  const parts=folderPath.split('/').filter(Boolean);
+  const inherited=new Set();
+  for(let i=1;i<parts.length;i++){
+    const parentPath='/'+parts.slice(0,i).join('/');
+    const pf=_pathMap.get(parentPath);
+    if(pf)pf.tags.forEach(t=>inherited.add(t));
+  }
+  const own=_pathMap.get(folderPath);
+  if(own)own.tags.forEach(t=>inherited.delete(t));
+  return[...inherited];
+}
+
+// ── Quick Stats (file type breakdown) ──
+const FILE_CATEGORIES={
+  image:['.jpg','.jpeg','.png','.gif','.webp','.svg','.bmp','.tiff','.tif','.exr','.hdr','.psd','.ai','.clip','.sai'],
+  video:['.mp4','.mov','.avi','.mkv','.webm','.flv','.wmv','.prproj','.aep'],
+  audio:['.mp3','.wav','.flac','.ogg','.aac','.m4a'],
+  doc:['.pdf','.doc','.docx','.txt','.rtf','.odt','.csv','.xlsx','.xls','.pptx','.ppt','.json','.html','.htm','.md'],
+  model3d:['.blend','.fbx','.obj','.gltf','.glb','.stl','.3ds','.c4d','.ma','.mb']
+};
+const CAT_COLORS={image:'#e06c75',video:'#61afef',audio:'#c678dd',doc:'#98c379',model3d:'#e5c07b'};
+function fileCat(ext){
+  for(const[cat,exts]of Object.entries(FILE_CATEGORIES)){if(exts.includes(ext))return cat}
+  return 'other';
+}
+function quickStatsBar(folderPath){
+  const stats=DATA.folderStats?DATA.folderStats[folderPath]:null;
+  if(!stats||!stats.count)return '';
+  const counts={image:0,video:0,audio:0,doc:0,model3d:0,other:0};
+  if(stats.exts){Object.entries(stats.exts).forEach(([ext,c])=>{counts[fileCat(ext)]+=c;});}
+  const total=stats.count;
+  let h='<span class="qs-bar" title="画像:'+counts.image+' 動画:'+counts.video+' 音声:'+counts.audio+' 文書:'+counts.doc+' 3D:'+counts.model3d+' 他:'+counts.other+'">';
+  for(const[cat,c]of Object.entries(counts)){
+    if(c===0)continue;
+    const w=Math.max(2,Math.round(c/total*40));
+    h+='<span class="qs-seg" style="width:'+w+'px;background:'+(CAT_COLORS[cat]||'var(--dim)')+'"></span>';
+  }
+  h+='</span>';
+  return h;
+}
+
+// Thumbnail helper
+const THUMB_MAP=DATA.thumbMap||{};
+function thumbHtml(folderPath){
+  if(!settings.showThumbs)return '';
+  const t=THUMB_MAP[folderPath];
+  if(!t)return '';
+  return '<img class="thumb-img" data-src="thumbs/'+encodeURIComponent(t)+'" alt="" loading="lazy">';
+}
+// Lazy load observer
+let _thumbObserver=null;
+function initThumbObserver(){
+  if(_thumbObserver)_thumbObserver.disconnect();
+  if(!settings.showThumbs)return;
+  _thumbObserver=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        const img=e.target;
+        if(img.dataset.src){
+          img.addEventListener('error',function(){this.style.display='none'},{once:true});
+          img.src=img.dataset.src;delete img.dataset.src;_thumbObserver.unobserve(img);
+        }
+      }
+    });
+  },{rootMargin:'200px'});
+  document.querySelectorAll('.thumb-img[data-src]').forEach(img=>_thumbObserver.observe(img));
+}
+
+// Smart search: Japanese → tag resolution
+function smartSearch(query){
+  if(!query)return[];
+  const q=query.toLowerCase();
+  const matched=new Set();
+  // Direct tag match
+  Object.keys(DATA.tagIndex||{}).forEach(t=>{if(t.toLowerCase().includes(q))matched.add(t)});
+  // Synonym match
+  Object.entries(TAG_MAP.synonyms||{}).forEach(([key,vals])=>{
+    if(key.toLowerCase().includes(q)||key.toLowerCase()===q){
+      vals.forEach(v=>{if(DATA.tagIndex&&DATA.tagIndex[v])matched.add(v)});
+    }
+    vals.forEach(v=>{if(v.toLowerCase().includes(q)&&DATA.tagIndex&&DATA.tagIndex[v])matched.add(v)});
+  });
+  return[...matched];
+}
+
+// Unified search: tags + folder names + synonyms
+let _searchResults=null;
+function unifiedSearch(query){
+  if(!query||query.length<1){_searchResults=null;return}
+  const words=query.toLowerCase().split(/s+/).filter(Boolean);
+  if(!words.length){_searchResults=null;return}
+
+  // For each word, find matching tags via smart search
+  const wordTags=words.map(w=>smartSearch(w));
+
+  // Score each folder - boost Notion results that match
+  const scores=new Map();
+  DATA.folders.forEach(f=>{
+    let score=0;
+    const pathLower=f.path.toLowerCase();
+    const tagsLower=f.tags.map(t=>t.toLowerCase());
+    const isNotion=f.path.startsWith('notion://');
+    const summaryLower=(f._summary||'').toLowerCase();
+
+    words.forEach((w,i)=>{
+      // Folder name/path match
+      if(pathLower.includes(w))score+=isNotion?15:10;
+      // Direct tag text match (check original case too)
+      if(tagsLower.some(t=>t.includes(w)))score+=5;
+      if(f.tags.some(t=>t.includes(w)))score+=3;
+      // Synonym-resolved tag match
+      if(wordTags[i].some(t=>f.tags.includes(t)))score+=8;
+      // Summary full-text match (Notion pages)
+      if(summaryLower&&summaryLower.includes(w))score+=12;
+    });
+
+    if(score>0)scores.set(f,score);
+  });
+
+  // Sort by score descending
+  _searchResults=[...scores.entries()].sort((a,b)=>b[1]-a[1]).map(e=>e[0]);
+
+}
+
+function col(t){return colors[t]||'#6e7681'}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
+
+// Sidebar
+function renderSB(q){
+  let h='';
+  // Rank groups by total folder count for default-open
+  const grpRanks=DATA.groups.map(g=>{
+    const total=g.children.reduce((s,t)=>(s+(DATA.tagIndex[t.title]||[]).length),0);
+    return{title:g.title,total};
+  }).sort((a,b)=>b.total-a.total);
+  const topGroups=new Set(grpRanks.slice(0,3).map(g=>g.title));
+
+  DATA.groups.forEach(g=>{
+    const kids=g.children.filter(t=>!q||t.title.toLowerCase().includes(q));
+    if(q&&kids.length===0)return;
+    const shouldOpen=q||topGroups.has(g.title)||[...filters].some(f=>kids.some(k=>k.title===f));
+    const op=shouldOpen?' on':'';
+    const totalCount=kids.reduce((s,t)=>s+(DATA.tagIndex[t.title]||[]).length,0);
+    h+='<div class="grp"><div class="grp-h'+op+'" onclick="tglG(this)"><span class="a">▶</span><span style="color:'+g.color+'">'+esc(g.title)+'</span><span class="c" title="'+totalCount+' フォルダ / '+kids.length+' タグ">'+kids.length+'</span></div><div class="grp-b'+op+'">';
+    kids.forEach(t=>{
+      const c=(DATA.tagIndex[t.title]||[]).length;
+      const a=filters.has(t.title)?' act':'';
+      h+='<div class="ti'+a+'" data-t="'+esc(t.title)+'" onclick="tglF(this.dataset.t)"><span class="bg" style="background:'+g.color+'">'+esc(t.title)+'</span><span class="n">'+c+'</span></div>';
+    });
+    h+='</div></div>';
+  });
+  document.getElementById('sb').innerHTML=h;
+}
+window.tglG=function(el){el.classList.toggle('on');el.nextElementSibling.classList.toggle('on')};
+
+// Filters
+window.tglF=function(tag){
+  filters.has(tag)?filters.delete(tag):filters.add(tag);
+  // タブ自動遷移なし — ユーザーが手動で切り替え
+  // Save sidebar open state
+  const openGroups=new Set();
+  document.querySelectorAll('.grp-h.on').forEach(el=>{const t=el.querySelector('span:nth-child(2)');if(t)openGroups.add(t.textContent)});
+  update();
+  // Restore sidebar open state
+  document.querySelectorAll('.grp-h').forEach(el=>{const t=el.querySelector('span:nth-child(2)');if(t&&openGroups.has(t.textContent)){el.classList.add('on');el.nextElementSibling.classList.add('on')}});
+};
+window.clearFilters=function(){filters.clear();filterMode='and';update()};
+window.toggleMode=function(){filterMode=filterMode==='and'?'or':'and';update()};
+
+// Build folder stats from folderStats or files array
+const _folderFileCount={};
+const _folderFiles={};
+if(DATA.folderStats){
+  Object.entries(DATA.folderStats).forEach(([folder,s])=>{_folderFileCount[folder]=s.count;});
+} else {
+  (DATA.files||[]).forEach(f=>{
+    const folder=f[0].substring(0,f[0].lastIndexOf('/'));
+    const name=f[0].substring(f[0].lastIndexOf('/')+1);
+    _folderFileCount[folder]=(_folderFileCount[folder]||0)+1;
+    if(!_folderFiles[folder])_folderFiles[folder]=[];
+    _folderFiles[folder].push({name,ext:f[1],size:f[2]});
+  });
+}
+
+// P1: path→folder Map for O(1) lookup (replaces .find() calls)
+const _pathMap=new Map();
+DATA.folders.forEach(f=>_pathMap.set(f.path,f));
+
+// P1: Pre-compute parent set for hideEmpty (avoid O(n^2))
+const _hasChildFolder=new Set();
+DATA.folders.forEach(f=>{
+  const parts=f.path.split('/').filter(Boolean);
+  for(let i=1;i<parts.length;i++){_hasChildFolder.add('/'+parts.slice(0,i).join('/'))}
+});
+
+// Build folder tree structure once
+const _tree={};
+DATA.folders.forEach(f=>{
+  const ps=f.path.split('/').filter(Boolean);
+  let n=_tree;
+  ps.forEach((p,i)=>{
+    if(!n[p])n[p]={_c:{},_t:[],_p:'/'+ps.slice(0,i+1).join('/')};
+    if(i===ps.length-1)n[p]._t=f.tags;
+    n=n[p]._c;
+  });
+});
+
+function filtered(){
+  // If unified search has results, use those (already scored+sorted)
+  if(_searchResults)return _searchResults;
+  let result=DATA.folders;
+  if(filters.size){
+    const fa=[...filters];
+    if(filterMode==='and') result=result.filter(f=>fa.every(t=>f.tags.includes(t)));
+    else result=result.filter(f=>fa.some(t=>f.tags.includes(t)));
+  }
+  // P1: use pre-computed _hasChildFolder set instead of O(n^2) .some()
+  if(settings.hideEmpty) result=result.filter(f=>(_folderFileCount[f.path]||0)>0||_hasChildFolder.has(f.path));
+  return result;
+}
+
+function update(){
+  const ct=document.getElementById('ct');
+  if(ct._vsHandler){ct.removeEventListener('scroll',ct._vsHandler);ct._vsHandler=null}
+  _vsExpandedIdx.clear();
+  const q=document.getElementById('q').value.toLowerCase();
+  // Unified search when typing (not just tag filter)
+  if(q&&q.length>=1&&!filters.size){
+    unifiedSearch(q);
+    // Auto switch to list view when searching
+    if(_searchResults&&_searchResults.length>0&&view!=='l'){
+      view='l';document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v==='l'));
+    }
+  } else {
+    _searchResults=null;
+  }
+  renderSB(q);renderFlt();renderBreadcrumb();renderView(q);
+  // Toggle search-active class for enlarged thumbnails during search
+  document.getElementById('ct').classList.toggle('search-active',!!_searchResults);
+  const fl=filtered().length;
+  document.getElementById('st').textContent=fl+' / '+DATA.folders.length+' フォルダ';
+  const ms=document.getElementById('mobSt');if(ms)ms.textContent=fl===DATA.folders.length?fl+'件':fl+'/'+DATA.folders.length;
+  setTimeout(initThumbObserver,50);
+}
+
+function renderFlt(){
+  const btn=document.getElementById('modeBtn');
+  btn.style.display=filters.size>=2?'':'none';
+  const modeLabel=filterMode==='and'?'すべて含む':'いずれか含む';
+  const modeHint=filterMode==='and'?'AND: 選択タグをすべて含むフォルダを表示':'OR: 選択タグのいずれかを含むフォルダを表示';
+  btn.innerHTML=filterMode.toUpperCase()+'<span class="mode-label">'+modeLabel+'</span><span class="mode-hint">'+modeHint+'<br>クリックで切替</span>';
+  btn.className='btn mode-btn'+(filterMode==='or'?' or':'');
+  document.getElementById('flt').innerHTML=[...filters].map(t=>
+    '<span class="ft" style="background:'+col(t)+'" data-t="'+esc(t)+'" onclick="tglF(this.dataset.t)">'+esc(t)+' ×</span>'
+  ).join('');
+}
+
+// View tabs
+['to','tl','tf','tg'].forEach(id=>{
+  document.getElementById(id).onclick=()=>{
+    view=document.getElementById(id).dataset.v;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v===view));
+    update();
+  };
+});
+
+function renderView(q){
+  const el=document.getElementById('ct');
+  if(view==='o')renderOverview(el);
+  else if(view==='l')renderList(el,q);
+  else if(view==='f')renderFolder(el,q);
+  else renderTagTree(el,q);
+}
+
+// ── Flat List (Virtual Scroll) ──
+let _vsList=[];
+let _vsExpandedIdx=new Set();
+// P1: ROW_H is now a getter so it updates when showThumbs changes
+function getRowH(){return settings.showThumbs?56:32}
+
+function getFilteredFiles(folderPath,q){
+  let files=_folderFiles[folderPath]||[];
+
+  if(q)files=files.filter(fi=>fi.name.toLowerCase().includes(q));
+  return files;
+}
+
+// Smart path: show last 2-3 segments, ellipsis for the rest
+function smartPath(fullPath){
+  const parts=fullPath.split('/').filter(Boolean);
+  if(parts.length<=3)return{parent:parts.slice(0,-1).join('/'),name:parts[parts.length-1]||''};
+  const name=parts[parts.length-1];
+  const ctx=parts[parts.length-2];
+  return{parent:'…/'+ctx,name:name};
+}
+
+function renderListRow(f,idx,q){
+  // Notion page - enhanced card style
+  if(f.path.startsWith('notion://')){
+    const name=f.path.replace('notion://','');
+    const url=f._notionUrl||'';
+    const ntags=f.tags||['notion'];
+    let h='<div class="ls-row" style="border-left:3px solid #f57c00;padding-left:8px;background:rgba(245,124,0,.04);border-radius:6px">';
+    h+='<div class="ls-path" style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">';
+    h+='<span style="font-size:18px;flex-shrink:0">📝</span>';
+    if(url)h+='<a href="'+esc(url)+'" target="_blank" style="color:var(--text);text-decoration:none;font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="event.stopPropagation()">'+esc(name)+'</a>';
+    else h+='<span style="font-size:13px;font-weight:500">'+esc(name)+'</span>';
+    if(url)h+='<span style="font-size:10px;color:var(--dim);flex-shrink:0">↗ Notion</span>';
+    h+='</div>';
+    if(f._summary)h+='<div style="font-size:11px;color:var(--dim);margin:2px 0 2px 30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:600px" title="'+esc(f._summary)+'">'+esc(f._summary)+'</div>';
+    h+='<div class="ls-tags">';
+    ntags.forEach(function(t){h+='<span class="bg" style="background:'+col(t)+';font-size:10px;cursor:pointer" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)">'+esc(t)+'</span> '});
+    h+='</div></div>';
+    return h;
+  }
+  const sp=smartPath(f.path);
+  // Source badge: identify Notion / NAS / local
+  let srcBadge='';
+  if(f.path.startsWith('notion://'))srcBadge='<span class="src-badge notion">Notion</span>';
+  else if(f.tags.includes('nas-direct'))srcBadge='<span class="src-badge nas">NAS</span>';
+  else srcBadge='<span class="src-badge local">Local</span>';
+  let tg=f.tags.map(t=>'<span class="bg" style="background:'+col(t)+';font-size:10px;cursor:pointer" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)">'+esc(t)+'</span>').join(' ');
+  if(settings.showInherited){
+    const inh=getInheritedTags(f.path);
+    if(inh.length)tg+=' '+inh.map(t=>'<span class="bg" style="background:'+col(t)+';font-size:10px;cursor:pointer;opacity:.35" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)" title="継承: '+esc(t)+'">'+esc(t)+'</span>').join(' ');
+  }
+  const files=getFilteredFiles(f.path,q);
+  const fc=files.length;
+  const desc=descSpan(sp.name);
+  const qs=quickStatsBar(f.path);
+  const th=thumbHtml(f.path);
+  const expanded=_vsExpandedIdx.has(idx);
+  let h='<div class="ls-row ls-folder-row'+(expanded?' exp':'')+'" data-idx="'+idx+'" onclick="tglLsFolder(this)" title="'+esc(f.path)+'" style="'+(th?'align-items:flex-start':'')+'">'+th+'<div class="ls-path"><span class="ls-expand-ico">▶</span><span class="ls-ico">📁</span> '+srcBadge+' <span class="ls-parent">'+esc(sp.parent?sp.parent+'/':'')+'</span><span class="ls-name">'+esc(sp.name)+'</span>'+desc+' <span style="color:var(--dim);font-size:10px;margin-left:4px">('+fc+')</span>'+qs+'</div><div class="ls-tags">'+tg+'</div></div>';
+  if(expanded){
+    h+='<div class="ls-children on">';
+    files.sort((a,b)=>a.name.localeCompare(b.name)).slice(0,200).forEach(fi=>{
+      const sz=fi.size>1048576?(fi.size/1048576).toFixed(1)+'MB':fi.size>1024?(fi.size/1024).toFixed(0)+'KB':fi.size+'B';
+      h+='<div class="ls-child-row"><span class="ls-ico">'+fileIcon(fi.ext)+'</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(fi.name)+'</span>'+(settings.showSize?'<span style="margin-left:auto;font-size:10px;color:var(--dim);flex-shrink:0">'+sz+'</span>':'')+'</div>';
+    });
+    if(files.length>200)h+='<div class="ls-child-row" style="color:var(--dim);font-style:italic">...他 '+(files.length-200)+' ファイル</div>';
+    h+='</div>';
+  }
+  return h;
+}
+
+function renderList(el,q){
+  let fl=filtered().filter(f=>f.path!=='/');
+  // If unified search is active, results are already filtered+sorted by score
+  if(!_searchResults&&q)fl=fl.filter(f=>f.path.toLowerCase().includes(q)||f.tags.some(t=>t.toLowerCase().includes(q)));
+
+  let totalFiles=0;
+  fl.forEach(f=>{totalFiles+=getFilteredFiles(f.path,null).length});
+
+  // When searching, split into NAS and Notion sections
+  const isSearching=_searchResults||q;
+  const notionResults=isSearching?fl.filter(f=>f.path.startsWith('notion://')):[];
+  const nasResults=isSearching?fl.filter(f=>!f.path.startsWith('notion://')):fl;
+
+  // Keep score order for search results, alphabetical otherwise
+  _vsList=_searchResults?nasResults:nasResults.sort((a,b)=>a.path.localeCompare(b.path));
+  const CHUNK=80;
+
+  // Build header with section counts
+  let headerHtml='';
+  if(isSearching&&(notionResults.length>0||nasResults.length>0)){
+    headerHtml+='<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">';
+    if(notionResults.length)headerHtml+='<span style="padding:4px 12px;background:rgba(245,124,0,.15);border:1px solid #f57c00;border-radius:50px;font-size:12px;color:#f57c00;font-weight:600">📝 Notion '+notionResults.length+'件</span>';
+    if(nasResults.length)headerHtml+='<span style="padding:4px 12px;background:rgba(0,172,193,.15);border:1px solid #00acc1;border-radius:50px;font-size:12px;color:#00acc1;font-weight:600">📁 NAS '+nasResults.length+'件</span>';
+    headerHtml+='</div>';
+  }
+
+  // Notion section (above NAS)
+  let notionHtml='';
+  if(notionResults.length>0){
+    notionHtml='<div style="margin-bottom:16px;border:1px solid rgba(245,124,0,.2);border-radius:var(--radius-lg);overflow:hidden"><div style="padding:8px 12px;background:rgba(245,124,0,.08);font-size:12px;font-weight:600;color:#f57c00;border-bottom:1px solid rgba(245,124,0,.15)">📝 Notion</div><div style="padding:4px">';
+    notionResults.slice(0,30).forEach((f,i)=>{notionHtml+=renderListRow(f,90000+i,q)});
+    if(notionResults.length>30)notionHtml+='<div style="padding:8px;text-align:center;color:var(--dim);font-size:11px">...他 '+(notionResults.length-30)+'件</div>';
+    notionHtml+='</div></div>';
+  }
+
+  el.innerHTML=headerHtml+notionHtml+'<div class="lst" id="vsLst"></div>';
+
+  let rendered=0;
+  const lst=document.getElementById('vsLst');
+
+  function renderChunk(){
+    if(rendered>=_vsList.length)return;
+    const end=Math.min(rendered+CHUNK,_vsList.length);
+    let h='';
+    for(let i=rendered;i<end;i++){h+=renderListRow(_vsList[i],i,q)}
+    const frag=document.createElement('div');
+    frag.innerHTML=h;
+    while(frag.firstChild)lst.appendChild(frag.firstChild);
+    rendered=end;
+  }
+
+  renderChunk();
+
+  // Load more on scroll
+  const ct=document.getElementById('ct');
+  ct._vsHandler=function(){
+    if(ct.scrollTop+ct.clientHeight>=ct.scrollHeight-400){renderChunk();setTimeout(initThumbObserver,20)}
+  };
+  ct.addEventListener('scroll',ct._vsHandler);
+}
+
+window.tglLsFolder=function(el){
+  const idx=+el.dataset.idx;
+  if(_vsExpandedIdx.has(idx)){
+    _vsExpandedIdx.delete(idx);
+    el.classList.remove('exp');
+    const ch=el.nextElementSibling;
+    if(ch&&ch.classList.contains('ls-children'))ch.remove();
+  } else {
+    _vsExpandedIdx.add(idx);
+    el.classList.add('exp');
+    const f=_vsList[idx];
+    if(!f)return;
+    const q=document.getElementById('q').value.toLowerCase();
+    const files=getFilteredFiles(f.path,q);
+    let h='<div class="ls-children on">';
+    files.sort((a,b)=>a.name.localeCompare(b.name)).slice(0,200).forEach(fi=>{
+      const sz=fi.size>1048576?(fi.size/1048576).toFixed(1)+'MB':fi.size>1024?(fi.size/1024).toFixed(0)+'KB':fi.size+'B';
+      h+='<div class="ls-child-row"><span class="ls-ico">'+fileIcon(fi.ext)+'</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(fi.name)+'</span>'+(settings.showSize?'<span style="margin-left:auto;font-size:10px;color:var(--dim);flex-shrink:0">'+sz+'</span>':'')+'</div>';
+    });
+    if(files.length>200)h+='<div class="ls-child-row" style="color:var(--dim);font-style:italic">...他 '+(files.length-200)+' ファイル</div>';
+    h+='</div>';
+    el.insertAdjacentHTML('afterend',h);
+  }
+};
+
+function fileIcon(ext){
+  const map={'.jpg':'🖼','.jpeg':'🖼','.png':'🖼','.gif':'🖼','.webp':'🖼','.svg':'🖼','.bmp':'🖼','.tiff':'🖼',
+    '.mp4':'🎬','.mov':'🎬','.avi':'🎬','.mkv':'🎬','.webm':'🎬',
+    '.mp3':'🎵','.wav':'🎵','.flac':'🎵','.ogg':'🎵','.aac':'🎵',
+    '.pdf':'📄','.doc':'📄','.docx':'📄','.txt':'📄','.rtf':'📄','.odt':'📄',
+    '.zip':'📦','.rar':'📦','.7z':'📦','.tar':'📦','.gz':'📦',
+    '.psd':'🎨','.ai':'🎨','.clip':'🎨','.sai':'🎨',
+    '.blend':'🧊','.fbx':'🧊','.obj':'🧊','.gltf':'🧊',
+    '.fla':'✏️','.swf':'✏️',
+    '.exe':'⚙️','.msi':'⚙️','.bat':'⚙️','.sh':'⚙️',
+    '.csv':'📊','.xlsx':'📊','.xls':'📊','.json':'📊',
+    '.html':'🌐','.htm':'🌐','.url':'🔗',
+    '.prproj':'🎞','.sboard':'📋',
+    '.goodnotes':'📓','.hks':'⌨️'};
+  return map[ext]||'📎';
+}
+
+// ── Welcome banner (first visit only) ──
+function renderWelcome(){
+  try{if(localStorage.getItem('tagviewer_welcomed'))return ''}catch(e){}
+  return '<div class="welcome" id="welcomeBanner"><button class="w-close" onclick="dismissWelcome()">×</button><h3>Tag Viewer へようこそ</h3><p>NAS・Notion・ローカルの全フォルダをタグで横断検索できるビューアです。</p><div class="w-tips"><div class="w-tip"><b>検索</b>左サイドバーの検索欄に日本語やタグ名を入力</div><div class="w-tip"><b>フィルタ</b>タグをクリックして絞り込み。複数タグでAND/OR切替</div><div class="w-tip"><b>概要</b>各カードのバーをクリックでフォルダ一覧を表示</div></div></div>';
+}
+window.dismissWelcome=function(){try{localStorage.setItem('tagviewer_welcomed','1')}catch(e){}const b=document.getElementById('welcomeBanner');if(b)b.remove()};
+
+// ── Overview ──
+function renderOverview(el){
+  let h=renderWelcome();
+  h+='<div class="ov">';
+  DATA.groups.forEach(g=>{
+    const activeTags=g.children.filter(t=>(DATA.tagIndex[t.title]||[]).length>0);
+    if(activeTags.length===0)return;
+    const maxCount=Math.max(...activeTags.map(t=>(DATA.tagIndex[t.title]||[]).length),1);
+    h+='<div class="ov-card"><h4><span class="dot" style="background:'+g.color+'"></span>'+esc(g.title)+'</h4>';
+    activeTags.forEach(t=>{
+      const c=(DATA.tagIndex[t.title]||[]).length;
+      const pct=Math.round(c/maxCount*100);
+      const isActive=filters.has(t.title);
+      const actStyle=isActive?'background:var(--blue-bg);border:1px solid var(--blue);':'';
+      const pctLabel=Math.round(c/DATA.folders.length*100);
+      h+='<div class="ov-bar" style="'+actStyle+'" data-t="'+esc(t.title)+'" onclick="ovBarClick(event,this.dataset.t)"><span class="lb" title="'+esc(t.title)+'">'+esc(t.title)+'</span><span class="br"><span class="br-f" style="width:'+pct+'%;background:linear-gradient(90deg,'+g.color+','+g.color+'cc)"></span></span><span class="vl">'+c+'</span><span class="ov-tip">'+esc(t.title)+': '+c+'フォルダ (全体の'+pctLabel+'%) — クリックで展開'+(isActive?' ✓フィルタ中':'')+'</span></div>';
+      h+='<div class="ov-drill" id="drill-'+esc(t.title)+'" style="display:none"></div>';
+    });
+    h+='</div>';
+  });
+
+  // Quick stats
+  const totalTags=Object.keys(DATA.tagIndex).length;
+  const totalFolders=DATA.folders.length;
+  const avgTags=(DATA.folders.reduce((a,f)=>a+f.tags.length,0)/totalFolders).toFixed(1);
+  h+='<div class="ov-card"><h4><span class="dot" style="background:var(--dim2)"></span>統計</h4>';
+  h+='<div style="font-size:12px;line-height:1.8;color:var(--dim2)">';
+  h+='フォルダ数: <b style="color:var(--text)">'+totalFolders+'</b><br>';
+  h+='ユニークタグ: <b style="color:var(--text)">'+totalTags+'</b><br>';
+  h+='平均タグ/フォルダ: <b style="color:var(--text)">'+avgTags+'</b><br>';
+  h+='タググループ: <b style="color:var(--text)">'+DATA.groups.length+'</b>';
+  h+='</div></div>';
+  h+='</div>';
+  el.innerHTML=h;
+}
+// Drilldown: single click shows top-5 preview, double click filters
+window.ovBarClick=function(e,tag){
+  const drillEl=document.getElementById('drill-'+tag);
+  if(!drillEl)return;
+  if(drillEl.style.display!=='none'){
+    // Already open: close it and apply filter
+    drillEl.style.display='none';
+    tglF(tag);
+    return;
+  }
+  // Close any other open drills
+  document.querySelectorAll('.ov-drill').forEach(d=>{d.style.display='none'});
+  // Build top-5 folders for this tag, sorted by file count
+  const folders=(DATA.tagIndex[tag]||[]).slice();
+  folders.sort((a,b)=>((_folderFileCount[b]||0)-(_folderFileCount[a]||0)));
+  const top5=folders.slice(0,5);
+  let h='';
+  top5.forEach(fp=>{
+    const parts=fp.split('/').filter(Boolean);
+    const short=parts.length>2?'…/'+parts.slice(-2).join('/'):fp;
+    const fc=_folderFileCount[fp]||0;
+    const qs=quickStatsBar(fp);
+    h+='<div class="ov-drill-item" title="'+esc(fp)+'" data-fp="'+esc(fp)+'" onclick="event.stopPropagation();goToTree(this.dataset.fp)">';
+    h+='<span style="font-size:11px">📁</span><span class="odi-path">'+esc(short)+'</span>'+qs+'<span class="odi-count">'+fc+' files</span></div>';
+  });
+  if(folders.length>5){
+    h+='<div class="ov-drill-more" data-t="'+esc(tag)+'" onclick="event.stopPropagation();tglF(this.dataset.t)">'+(folders.length-5)+' 件もっと見る → フィルタ適用</div>';
+  }
+  drillEl.innerHTML=h;
+  drillEl.style.display='block';
+};
+
+// ── Folder Tree ── P1: use cached _tree, P2: auto-expand to matched folders
+function renderFolder(el,q){
+  const fl=filtered();
+  const fps=new Set(fl.map(f=>f.path));
+
+  // P2: collect all ancestor paths of matched folders for auto-expand
+  const autoExpandPaths=new Set();
+  if(filters.size||q){
+    fps.forEach(fp=>{
+      const parts=fp.split('/').filter(Boolean);
+      for(let i=1;i<parts.length;i++){autoExpandPaths.add('/'+parts.slice(0,i).join('/'))}
+    });
+  }
+
+  function hasMatchingChild(nd){
+    if(fps.has(nd._p))return true;
+    for(const k of Object.keys(nd._c)){
+      if(hasMatchingChild(nd._c[k]))return true;
+    }
+    return false;
+  }
+
+  // P1: use cached _tree instead of rebuilding every render
+  function rn(ch,d){
+    let h='';
+    Object.keys(ch).sort().forEach(name=>{
+      const nd=ch[name];
+      const hc=Object.keys(nd._c).length>0;
+      let files=_folderFiles[nd._p]||[];
+
+      if(q)files=files.filter(fi=>fi.name.toLowerCase().includes(q));
+      const hasFiles=files.length>0;
+      const hasChildren=hc||hasFiles;
+
+      const m=fps.has(nd._p);
+      const sm=q?(name.toLowerCase().includes(q)||nd._t.some(t=>t.toLowerCase().includes(q))):true;
+      if(q&&!sm&&!hc&&!hasFiles)return;
+      if(filters.size>0&&!m&&!hasMatchingChild(nd))return;
+      // P2: highlight matched folders, pulse current loc
+      const cls=filters.size&&m?' hi loc-cur':'';
+
+      // Direct tags
+      let tg=nd._t.map(t=>'<span class="mt" style="background:'+col(t)+'" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)">'+esc(t)+'</span>').join('');
+      // Inherited tags
+      if(settings.showInherited){
+        const inh=getInheritedTags(nd._p);
+        if(inh.length)tg+=inh.map(t=>'<span class="mt" style="background:'+col(t)+';opacity:.3" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)" title="継承: '+esc(t)+'">'+esc(t)+'</span>').join('');
+      }
+      const fc=hasFiles?' <span style="color:var(--dim);font-size:9px;margin-left:2px">['+files.length+']</span>':'';
+      const desc=descSpan(name);
+      // P2: auto-open ancestors of matched folders
+      const open=d<2||(q&&sm)||(autoExpandPaths.has(nd._p))||((filters.size>0)&&m);
+
+      const th=thumbHtml(nd._p);
+      h+='<div class="fn'+(d===0?' r':'')+'"><div class="fr'+cls+(open&&hasChildren?' exp':'')+'" onclick="tglFd(this)" data-fp="'+esc(nd._p)+'" style="'+(th?'align-items:flex-start':'')+'">'+th+'<span class="ic">'+(hasChildren?'▶':'·')+'</span><span class="nm">'+esc(name)+desc+fc+'</span><span class="tgs">'+tg+'</span></div>';
+      if(hasChildren){
+        // P2: render deeper if path needs auto-expand
+        const shouldRender=d<2||open;
+        h+='<div class="fc'+(d<2||autoExpandPaths.has(nd._p)?' guide':'')+(open?' on':'')+'" data-loaded="'+(shouldRender?'1':'0')+'">';
+        if(shouldRender){
+          h+=rn(nd._c,d+1);
+        }
+        h+='</div>';
+      }
+      h+='</div>';
+    });
+    return h;
+  }
+
+  el.innerHTML=rn(_tree,0)||'<div class="empty">フィルタに一致するフォルダがありません</div>';
+
+  // P2: scroll to first matched folder
+  if(filters.size||q){
+    setTimeout(()=>{
+      const first=el.querySelector('.fr.loc-cur');
+      if(first)first.scrollIntoView({behavior:'smooth',block:'center'});
+    },100);
+  }
+}
+
+// Find tree node by path
+function findTreeNode(path){
+  const ps=path.split('/').filter(Boolean);
+  let n=_tree;
+  for(const p of ps){if(!n[p])return null;if(ps.indexOf(p)===ps.length-1)return n[p];n=n[p]._c;}
+  return null;
+}
+// Render subtree for lazy expand - P2: include filter highlight
+function renderSubtree(nd){
+  const fl=filters.size?filtered():null;
+  const fps=fl?new Set(fl.map(f=>f.path)):null;
+  let h='';
+  Object.keys(nd._c).sort().forEach(name=>{
+    const child=nd._c[name];
+    const hc=Object.keys(child._c).length>0;
+    const fc=_folderFileCount[child._p]||0;
+    const fcStr=fc?' <span style="color:var(--dim);font-size:9px;margin-left:2px">['+fc+']</span>':'';
+    let tg=child._t.map(t=>'<span class="mt" style="background:'+col(t)+'" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)">'+esc(t)+'</span>').join('');
+    if(settings.showInherited){
+      const inh=getInheritedTags(child._p);
+      if(inh.length)tg+=inh.map(t=>'<span class="mt" style="background:'+col(t)+';opacity:.3" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)" title="継承: '+esc(t)+'">'+esc(t)+'</span>').join('');
+    }
+    const desc=descSpan(name);
+    const th=thumbHtml(child._p);
+    // P2: highlight if this folder matches current filter
+    const hiCls=fps&&fps.has(child._p)?' hi loc-cur':'';
+    h+='<div class="fn"><div class="fr'+hiCls+'" onclick="tglFd(this)" data-fp="'+esc(child._p)+'" style="'+(th?'align-items:flex-start':'')+'">'+th+'<span class="ic">'+(hc||fc?'▶':'·')+'</span><span class="nm">'+esc(name)+desc+fcStr+'</span><span class="tgs">'+tg+'</span></div>';
+    if(hc||fc){h+='<div class="fc guide" data-loaded="0"></div>';}
+    h+='</div>';
+  });
+  return h;
+}
+window.tglFd=function(el){
+  const c=el.nextElementSibling;
+  if(c&&c.classList.contains('fc')){
+    c.classList.toggle('on');el.classList.toggle('exp');
+    if(c.classList.contains('on')&&c.dataset.loaded==='0'){
+      c.dataset.loaded='1';
+      const fp=el.dataset.fp;
+      const nd=findTreeNode(fp);
+      let h='';
+      if(nd)h+=renderSubtree(nd);
+      c.insertAdjacentHTML('beforeend',h);
+      setTimeout(initThumbObserver,20);
+    }
+  }
+};
+
+window.expandAll=function(){document.querySelectorAll('.fc').forEach(e=>e.classList.add('on'));document.querySelectorAll('.fr').forEach(e=>{if(e.nextElementSibling&&e.nextElementSibling.classList.contains('fc'))e.classList.add('exp')})};
+window.collapseAll=function(){document.querySelectorAll('.fc').forEach(e=>e.classList.remove('on'));document.querySelectorAll('.fr.exp').forEach(e=>e.classList.remove('exp'))};
+
+// ── Tag Tree ── P3: group collapse + folder click navigates to tree view
+function renderTagTree(el,q){
+  let h='';
+  DATA.groups.forEach(g=>{
+    const kids=g.children.filter(t=>{
+      if(q&&!t.title.toLowerCase().includes(q))return false;
+      return(DATA.tagIndex[t.title]||[]).length>0;
+    });
+    if(kids.length===0)return;
+
+    const totalCount=kids.reduce((s,t)=>s+(DATA.tagIndex[t.title]||[]).length,0);
+    // P3: collapsible group header (default open for groups with active filters)
+    const hasActive=kids.some(t=>filters.has(t.title));
+    const groupOpen=hasActive||!q;
+    h+='<div class="tt-g"><div class="tt-g-head'+(groupOpen?' on':'')+'" onclick="tglTTG(this)" style="color:'+g.color+'"><span class="tt-arrow">▶</span>'+esc(g.title)+' <span style="font-size:10px;color:var(--dim);font-weight:400">'+kids.length+' tags / '+totalCount+' folders</span></div><div class="tt-g-body'+(groupOpen?' on':'')+'">';
+    kids.sort((a,b)=>(DATA.tagIndex[b.title]||[]).length-(DATA.tagIndex[a.title]||[]).length);
+    kids.forEach(t=>{
+      const folders=DATA.tagIndex[t.title]||[];
+      const a=filters.has(t.title);
+      h+='<div class="tt-r"><div class="tt-h'+(a?' on':'')+'" onclick="tglTT(this)" style="'+(a?'background:var(--blue-bg)':'')+'"><span class="a">▶</span><span class="bg" style="background:'+g.color+'">'+esc(t.title)+'</span><span style="color:var(--dim);font-size:10px">'+folders.length+'</span></div><div class="tt-f">';
+      [...folders].sort().forEach(f=>{
+        const short=f.split('/').slice(-2).join('/');
+        // P3: click folder to navigate to tree view
+        h+='<div class="tt-fl" title="'+esc(f)+'" data-fp="'+esc(f)+'" onclick="goToTree(this.dataset.fp)">'+esc(short)+' <span style="font-size:9px;color:var(--dim);margin-left:4px">→ツリー</span></div>';
+      });
+      h+='</div></div>';
+    });
+    h+='</div></div>';
+  });
+  el.innerHTML=h||'<div class="empty">タグが見つかりません</div>';
+}
+
+window.tglTT=function(el){el.classList.toggle('on');el.nextElementSibling.classList.toggle('on')};
+window.tglTTG=function(el){el.classList.toggle('on');el.nextElementSibling.classList.toggle('on')};
+// P3: Navigate from tag tree folder to tree view, auto-expanding to target
+window.goToTree=function(folderPath){
+  breadcrumbPath=folderPath;
+  view='f';
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v==='f'));
+  update();
+  // After render, find and highlight the target folder
+  setTimeout(()=>{
+    const target=document.querySelector('.fr[data-fp="'+folderPath+'"]');
+    if(target){
+      target.classList.add('loc-cur');
+      target.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+  },150);
+};
+
+// ── Keyboard Shortcuts ──
+document.addEventListener('keydown',function(e){
+  // Suggest navigation
+  if(e.key==='ArrowDown'&&document.activeElement===document.getElementById('q')){
+    if(navSuggest(1)){e.preventDefault();return}
+  }
+  if(e.key==='ArrowUp'&&document.activeElement===document.getElementById('q')){
+    if(navSuggest(-1)){e.preventDefault();return}
+  }
+  if(e.key==='Enter'&&document.activeElement===document.getElementById('q')){
+    if(confirmSuggest()){e.preventDefault();return}
+  }
+  // Escape: close suggest or clear all filters
+  if(e.key==='Escape'){
+    e.preventDefault();
+    const sg=document.getElementById('suggest');
+    if(sg.classList.contains('on')){sg.classList.remove('on');_sgIdx=-1;return}
+    clearFilters();
+    document.getElementById('q').value='';
+    document.getElementById('q').blur();
+    update();
+  }
+  // / : focus search (only if not in input)
+  if(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='SELECT'&&document.activeElement.tagName!=='TEXTAREA'){
+    e.preventDefault();
+    document.getElementById('q').focus();
+  }
+});
+
+// Mobile sidebar
+window.openSide=function(){document.getElementById('sidePanel').classList.add('open');document.getElementById('mobOverlay').classList.add('on')};
+window.closeSide=function(){document.getElementById('sidePanel').classList.remove('open');document.getElementById('mobOverlay').classList.remove('on')};
+// Mobile search sync
+const qMob=document.getElementById('qMob');
+if(qMob){qMob.addEventListener('input',()=>{document.getElementById('q').value=qMob.value;showSuggest(qMob.value);if(_aiResultActive){_aiResultActive=false;_searchResults=null;const ra=document.getElementById('aiResultArea');if(ra)ra.innerHTML=''}update();updateAiSearchArea()})}
+
+// Smart search suggest with keyboard nav
+let _sgIdx=-1;
+function suggestCatLabel(tag){
+  for(const g of DATA.groups){if(g.children.some(c=>c.title===tag))return g.title}
+  return '';
+}
+function showSuggest(q){
+  const sg=document.getElementById('suggest');
+  _sgIdx=-1;
+  if(!q||q.length<1){sg.classList.remove('on');return}
+  const tags=smartSearch(q);
+  if(!tags.length){sg.classList.remove('on');return}
+  // Sort by count descending
+  tags.sort((a,b)=>(DATA.tagIndex[b]||[]).length-(DATA.tagIndex[a]||[]).length);
+  let h='<div class="suggest-label">タグ候補（クリックまたは↑↓Enterで選択）</div>';
+  tags.slice(0,15).forEach((t,i)=>{
+    const c=(DATA.tagIndex[t]||[]).length;
+    const cat=suggestCatLabel(t);
+    h+='<div class="suggest-item" data-t="'+esc(t)+'" data-si="'+i+'" onclick="pickSuggest(this.dataset.t)"><span class="s-tag" style="background:'+col(t)+'">'+esc(t)+'</span>'+(cat?'<span class="s-cat">'+esc(cat)+'</span>':'')+'<span class="s-count">'+c+'件</span></div>';
+  });
+  h+='<div class="suggest-hint"><kbd>↑</kbd><kbd>↓</kbd> 移動 <kbd>Enter</kbd> 選択 <kbd>Esc</kbd> 閉じる</div>';
+  sg.innerHTML=h;
+  sg.classList.add('on');
+}
+window.pickSuggest=function(tag){
+  tglF(tag);
+  document.getElementById('suggest').classList.remove('on');
+  _sgIdx=-1;
+};
+function navSuggest(dir){
+  const sg=document.getElementById('suggest');
+  if(!sg.classList.contains('on'))return false;
+  const items=sg.querySelectorAll('.suggest-item');
+  if(!items.length)return false;
+  items.forEach(el=>el.classList.remove('sg-active'));
+  _sgIdx+=dir;
+  if(_sgIdx<0)_sgIdx=items.length-1;
+  if(_sgIdx>=items.length)_sgIdx=0;
+  items[_sgIdx].classList.add('sg-active');
+  items[_sgIdx].scrollIntoView({block:'nearest'});
+  return true;
+}
+function confirmSuggest(){
+  const sg=document.getElementById('suggest');
+  if(!sg.classList.contains('on')||_sgIdx<0)return false;
+  const items=sg.querySelectorAll('.suggest-item');
+  if(_sgIdx<items.length){pickSuggest(items[_sgIdx].dataset.t);return true}
+  return false;
+}
+document.addEventListener('click',e=>{if(!e.target.closest('.side-head'))document.getElementById('suggest').classList.remove('on')});
+
+// ── AI Search (Claude API) ──
+function getAiKey(){try{return localStorage.getItem('tv_anthropic_key')||''}catch(e){return''}}
+window.saveAiKey=function(v){
+  try{localStorage.setItem('tv_anthropic_key',v.trim())}catch(e){}
+  updateAiKeyStatus();
+};
+function updateAiKeyStatus(){
+  const el=document.getElementById('aiKeyStatus');
+  const input=document.getElementById('aiKeyInput');
+  const k=getAiKey();
+  if(el){
+    if(k){el.className='ai-key-status set';el.textContent='✓ 設定済み'}
+    else{el.className='ai-key-status unset';el.textContent='未設定'}
+  }
+  if(input&&k){input.value=k}
+}
+
+// Get top N tags sorted by folder count
+function getTopTags(n){
+  const entries=Object.entries(DATA.tagIndex||{}).map(([t,fps])=>({tag:t,count:fps.length}));
+  entries.sort((a,b)=>b.count-a.count);
+  return entries.slice(0,n);
+}
+
+// Show/hide AI search button based on search results
+let _aiResultActive=false;
+function updateAiSearchArea(){
+  const area=document.getElementById('aiSearchArea');
+  if(!area)return;
+  const q=document.getElementById('q').value.trim();
+  const key=getAiKey();
+  const resultCount=_searchResults?_searchResults.length:0;
+
+  // Show button if: query exists, keyword results < 5, API key set, not already showing AI results
+  if(q.length>=2&&resultCount<5&&key&&!_aiResultActive){
+    area.classList.add('on');
+    const btn=document.getElementById('aiSearchBtn');
+    if(btn){btn.disabled=false;btn.innerHTML='🤖 AI検索で「'+esc(q)+'」を探す'}
+  } else {
+    area.classList.remove('on');
+  }
+}
+
+let _aiAbortController=null;
+window.runAiSearch=async function(){
+  const q=document.getElementById('q').value.trim();
+  const key=getAiKey();
+  if(!q||!key)return;
+
+  const btn=document.getElementById('aiSearchBtn');
+  const resultArea=document.getElementById('aiResultArea');
+  if(btn){btn.disabled=true;btn.innerHTML='<span class="ai-spinner"></span> AI分析中...'}
+
+  // Abort previous request if any
+  if(_aiAbortController)_aiAbortController.abort();
+  _aiAbortController=new AbortController();
+
+  // Build tag list for context (top 100 tags)
+  const topTags=getTopTags(100);
+  const tagList=topTags.map(t=>t.tag+' ('+t.count+')').join(', ');
+
+  // Build category list
+  const categories=DATA.groups.map(g=>g.title+': '+g.children.map(c=>c.title).join(', ')).join('\n');
+
+  const systemPrompt='あなたはファイル検索アシスタントです。ユーザーの自然言語クエリと利用可能なタグ一覧を基に、最も関連するタグとパスパターンを提案してください。\n\n以下のJSON形式で回答してください（他のテキストは不要）:\n{"tags": ["tag1", "tag2"], "pathPatterns": ["pattern1", "pattern2"], "explanation": "日本語の説明"}\n\ntags: 利用可能なタグの中からマッチするもの（最大5個）\npathPatterns: フォルダパスに含まれそうなキーワード（最大5個）\nexplanation: なぜこれらを提案したか（1-2文の日本語）';
+
+  const userMsg='検索クエリ: 「'+q+'」\n\n利用可能なタグ一覧:\n'+tagList+'\n\nタグカテゴリ:\n'+categories;
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key':key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body:JSON.stringify({
+        model:'claude-haiku-4-5-20251001',
+        max_tokens:400,
+        system:systemPrompt,
+        messages:[{role:'user',content:userMsg}]
+      }),
+      signal:_aiAbortController.signal
+    });
+
+    if(!resp.ok){
+      const errData=await resp.json().catch(()=>({}));
+      throw new Error(errData.error?.message||'API Error: '+resp.status);
+    }
+
+    const data=await resp.json();
+    const text=(data.content&&data.content[0]&&data.content[0].text)||'';
+
+    // Parse JSON from response (handle potential markdown wrapping)
+    let jsonStr=text;
+    const jsonMatch=text.match(/\{[\s\S]*\}/);
+    if(jsonMatch)jsonStr=jsonMatch[0];
+
+    let result;
+    try{result=JSON.parse(jsonStr)}catch(e){throw new Error('AI応答の解析に失敗: '+text.substring(0,100))}
+
+    const suggestedTags=(result.tags||[]).filter(t=>DATA.tagIndex&&DATA.tagIndex[t]);
+    const pathPatterns=(result.pathPatterns||[]).map(p=>p.toLowerCase());
+    const explanation=result.explanation||'';
+
+    // Apply AI results: search folders matching suggested tags OR path patterns
+    const aiMatches=new Set();
+    DATA.folders.forEach(f=>{
+      // Match by suggested tags
+      if(suggestedTags.some(t=>f.tags.includes(t)))aiMatches.add(f);
+      // Match by path patterns
+      if(pathPatterns.some(p=>f.path.toLowerCase().includes(p)))aiMatches.add(f);
+    });
+
+    _searchResults=[...aiMatches];
+    _aiResultActive=true;
+
+    // Show result card
+    let cardH='<div class="ai-result-card"><button class="ai-close" onclick="clearAiResult()">×</button>';
+    cardH+='<div style="font-size:11px;color:var(--accent);font-weight:600;margin-bottom:6px">🤖 AI検索結果</div>';
+    if(explanation)cardH+='<div class="ai-explain">'+esc(explanation)+'</div>';
+    if(suggestedTags.length){
+      cardH+='<div class="ai-tags">';
+      suggestedTags.forEach(t=>{
+        const isExisting=DATA.tagIndex&&DATA.tagIndex[t];
+        cardH+='<span class="ai-tag'+(isExisting?' matched':'')+'" style="background:'+col(t)+'" data-t="'+esc(t)+'" onclick="event.stopPropagation();tglF(this.dataset.t)">'+esc(t)+'</span>';
+      });
+      cardH+='</div>';
+    }
+    if(pathPatterns.length){
+      cardH+='<div style="font-size:10px;color:var(--dim);margin-top:4px">パスパターン: '+pathPatterns.map(p=>'<code style="background:var(--bg3);padding:1px 6px;border-radius:3px">'+esc(p)+'</code>').join(' ')+'</div>';
+    }
+    cardH+='<div style="font-size:10px;color:var(--dim);margin-top:4px">'+_searchResults.length+' 件見つかりました</div>';
+    cardH+='</div>';
+    if(resultArea)resultArea.innerHTML=cardH;
+
+    // Switch to list view and render
+    if(_searchResults.length>0&&view!=='l'){
+      view='l';document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.v==='l'));
+    }
+    renderSB(document.getElementById('q').value.toLowerCase());
+    renderFlt();renderBreadcrumb();renderView(document.getElementById('q').value.toLowerCase());
+    document.getElementById('ct').classList.add('search-active');
+    const fl=_searchResults.length;
+    document.getElementById('st').textContent=fl+' / '+DATA.folders.length+' フォルダ (AI)';
+    setTimeout(initThumbObserver,50);
+
+    // Hide AI button
+    document.getElementById('aiSearchArea').classList.remove('on');
+
+  }catch(e){
+    if(e.name==='AbortError')return;
+    console.error('AI search error:',e);
+    if(resultArea)resultArea.innerHTML='<div class="ai-result-card" style="border-color:#ef4444"><button class="ai-close" onclick="clearAiResult()">×</button><div style="color:#ef4444;font-size:12px">⚠ AI検索エラー: '+esc(e.message)+'</div></div>';
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='🤖 AI検索で「'+esc(q)+'」を探す'}
+  }
+};
+
+window.clearAiResult=function(){
+  _aiResultActive=false;
+  _searchResults=null;
+  const resultArea=document.getElementById('aiResultArea');
+  if(resultArea)resultArea.innerHTML='';
+  update();
+};
+
+// Init
+loadSettings();
+updateAiKeyStatus();
+document.getElementById('q').addEventListener('input',()=>{
+  const v=document.getElementById('q').value;
+  showSuggest(v);
+  // Clear AI result when query changes
+  if(_aiResultActive){_aiResultActive=false;_searchResults=null;const ra=document.getElementById('aiResultArea');if(ra)ra.innerHTML=''}
+  update();
+  updateAiSearchArea();
+  if(qMob)qMob.value=v;
+});
+update();
+} // end startApp
+</script>
+</body>
+</html>
